@@ -1,0 +1,34 @@
+# Contract for the on-device connection config persistence: saveConfig
+# serializes the config to AsyncStorage under the single storage key and
+# loadConfig returns the same shape back, or undefined when nothing is
+# stored yet (the explicit not-configured representation). The harness
+# mocks AsyncStorage with an in-memory map cleared per scenario so terms
+# stay independent.
+subject: connectionConfigServiceContractHarness
+module: ./__tests__/_connection-config-service-contract-harness.js
+subjectType: function
+methods:
+  loadAfterSave:
+    terms:
+      - params:
+          - config:
+              host: 100.101.102.103
+              port: 8787
+              token: pairing-token
+        result:
+          host: 100.101.102.103
+          port: 8787
+          token: pairing-token
+      - params:
+          - config:
+              host: desktop.local
+              port: 9000
+              token: 'a b/c&d'
+        result:
+          host: desktop.local
+          port: 9000
+          token: 'a b/c&d'
+  loadWhenStorageEmpty:
+    terms:
+      - params: []
+        result: !undefined

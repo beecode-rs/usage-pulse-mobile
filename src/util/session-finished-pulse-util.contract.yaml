@@ -1,0 +1,166 @@
+# Contract for sessionFinishedPulseUtil.
+# The dashboard session rows flash their whole border white for a short window
+# after the session finishes. resolveFinishedAtBySessionId maintains the stamp
+# map feeding that flash: a session that was busy in the previous snapshot and
+# idle in the current one is stamped finished at nowMs, entries for sessions
+# that are no longer idle (or no longer listed) are dropped, and untouched
+# still-idle sessions keep their original stamp. isPulsing reads a stamp back:
+# true only while nowMs falls inside the pulse window, and never without a
+# stamp or with a non-positive window.
+subject: sessionFinishedPulseUtil
+module: ./session-finished-pulse-util.js
+subjectType: function
+methods:
+  isPulsing:
+    terms:
+      # Without a finished stamp there is nothing to pulse.
+      - params:
+          - finishedAtMs: !undefined
+            nowMs: 5000
+            pulseMs: 10000
+        result: false
+      # A non-positive pulse window never pulses.
+      - params:
+          - finishedAtMs: 1000
+            nowMs: 5000
+            pulseMs: 0
+        result: false
+      # Inside the window the finished flash is still pulsing.
+      - params:
+          - finishedAtMs: 1000
+            nowMs: 10999
+            pulseMs: 10000
+        result: true
+      # At or past the window end the flash is done.
+      - params:
+          - finishedAtMs: 1000
+            nowMs: 11000
+            pulseMs: 10000
+        result: false
+  resolveFinishedAtBySessionId:
+    terms:
+      # A busy to idle transition stamps the session finished at nowMs.
+      - params:
+          - currentSessions:
+              - cwd: /home/user/proj-a
+                kind: claude
+                name: fix-login
+                pid: 1
+                sessionId: s1
+                startedAt: 1000
+                status: idle
+            finishedAtBySessionId: {}
+            nowMs: 5000
+            previousSessions:
+              - cwd: /home/user/proj-a
+                kind: claude
+                name: fix-login
+                pid: 1
+                sessionId: s1
+                startedAt: 1000
+                status: busy
+        result:
+          s1: 5000
+      # A still-idle session keeps its earlier stamp instead of being re-stamped.
+      - params:
+          - currentSessions:
+              - cwd: /home/user/proj-a
+                kind: claude
+                name: fix-login
+                pid: 1
+                sessionId: s1
+                startedAt: 1000
+                status: idle
+            finishedAtBySessionId:
+              s1: 2000
+            nowMs: 5000
+            previousSessions:
+              - cwd: /home/user/proj-a
+                kind: claude
+                name: fix-login
+                pid: 1
+                sessionId: s1
+                startedAt: 1000
+                status: idle
+        result:
+          s1: 2000
+      # A session that went back to busy loses its stamp.
+      - params:
+          - currentSessions:
+              - cwd: /home/user/proj-a
+                kind: claude
+                name: fix-login
+                pid: 1
+                sessionId: s1
+                startedAt: 1000
+                status: busy
+            finishedAtBySessionId:
+              s1: 2000
+            nowMs: 5000
+            previousSessions:
+              - cwd: /home/user/proj-a
+                kind: claude
+                name: fix-login
+                pid: 1
+                sessionId: s1
+                startedAt: 1000
+                status: idle
+        result: {}
+      # Without a previous snapshot no transition can be observed.
+      - params:
+          - currentSessions:
+              - cwd: /home/user/proj-a
+                kind: claude
+                name: fix-login
+                pid: 1
+                sessionId: s1
+                startedAt: 1000
+                status: idle
+            finishedAtBySessionId: {}
+            nowMs: 5000
+            previousSessions: !undefined
+        result: {}
+      # Only busy to idle transitions count; waiting to idle does not stamp.
+      - params:
+          - currentSessions:
+              - cwd: /home/user/proj-a
+                kind: claude
+                name: fix-login
+                pid: 1
+                sessionId: s1
+                startedAt: 1000
+                status: idle
+            finishedAtBySessionId: {}
+            nowMs: 5000
+            previousSessions:
+              - cwd: /home/user/proj-a
+                kind: claude
+                name: fix-login
+                pid: 1
+                sessionId: s1
+                startedAt: 1000
+                status: waiting
+        result: {}
+      # A dropped session disappears from the map while a transitioning one is added.
+      - params:
+          - currentSessions:
+              - cwd: /home/user/proj-b
+                kind: claude
+                name: ''
+                pid: 2
+                sessionId: s2
+                startedAt: 2000
+                status: idle
+            finishedAtBySessionId:
+              s1: 2000
+            nowMs: 9000
+            previousSessions:
+              - cwd: /home/user/proj-b
+                kind: claude
+                name: ''
+                pid: 2
+                sessionId: s2
+                startedAt: 2000
+                status: busy
+        result:
+          s2: 9000

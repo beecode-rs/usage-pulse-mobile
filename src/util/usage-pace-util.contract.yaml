@@ -1,0 +1,156 @@
+# Contract for UsagePaceUtil meter coloring.
+# The usage meter fill is colored by pace, not by raw used percent: the used
+# percent is compared against how much of the window has elapsed (diff), and a
+# drift within the on-pace band keeps the accent color while drifts beyond it
+# step through the red ramp (burning faster than the clock) or the green ramp
+# (burning slower), one step per paceStepPercent of drift, capped at five
+# steps. Colors come from the caller-provided theme palette, so every term
+# passes a sentinel palette and asserts the picked key. A window without
+# resetAt has no pace, so resolvePaceColor answers undefined and the caller
+# falls back to severity coloring. All terms use windowMs 1000000 so elapsed
+# percents stay exact: resetAt 1000000 at nowMs 0 means 0% elapsed, resetAt
+# 700000 means 30%, resetAt 500000 means 50%, and a resetAt one window in the
+# past means 100%.
+subject: UsagePaceUtil
+module: ./usage-pace-util.js
+subjectType: class
+constructor:
+  # A fresh instance carries no own fields, so it serializes as an empty object.
+  terms:
+    - params: []
+      result: {}
+methods:
+  resolvePaceColor:
+    terms:
+      # No resetAt means no pace to measure.
+      - constructorParams: []
+        params:
+          - nowMs: 0
+            resetAt: !undefined
+            theme:
+              accent: '#t-accent'
+              paceGreen: ['#t-green-1', '#t-green-2', '#t-green-3', '#t-green-4', '#t-green-5']
+              paceRed: ['#t-red-1', '#t-red-2', '#t-red-3', '#t-red-4', '#t-red-5']
+            usedPercent: 40
+            windowMs: 1000000
+        result: !undefined
+      # On pace at the band edge stays accent.
+      - constructorParams: []
+        params:
+          - nowMs: 0
+            resetAt: 1000000
+            theme:
+              accent: '#t-accent'
+              paceGreen: ['#t-green-1', '#t-green-2', '#t-green-3', '#t-green-4', '#t-green-5']
+              paceRed: ['#t-red-1', '#t-red-2', '#t-red-3', '#t-red-4', '#t-red-5']
+            usedPercent: 5
+            windowMs: 1000000
+        result: '#t-accent'
+      # Mid-window usage matching elapsed time is on pace.
+      - constructorParams: []
+        params:
+          - nowMs: 0
+            resetAt: 500000
+            theme:
+              accent: '#t-accent'
+              paceGreen: ['#t-green-1', '#t-green-2', '#t-green-3', '#t-green-4', '#t-green-5']
+              paceRed: ['#t-red-1', '#t-red-2', '#t-red-3', '#t-red-4', '#t-red-5']
+            usedPercent: 50
+            windowMs: 1000000
+        result: '#t-accent'
+      # One percent beyond the band takes the first red step.
+      - constructorParams: []
+        params:
+          - nowMs: 0
+            resetAt: 1000000
+            theme:
+              accent: '#t-accent'
+              paceGreen: ['#t-green-1', '#t-green-2', '#t-green-3', '#t-green-4', '#t-green-5']
+              paceRed: ['#t-red-1', '#t-red-2', '#t-red-3', '#t-red-4', '#t-red-5']
+            usedPercent: 6
+            windowMs: 1000000
+        result: '#t-red-1'
+      # A full paceStepPercent of drift is still the first red step.
+      - constructorParams: []
+        params:
+          - nowMs: 0
+            resetAt: 1000000
+            theme:
+              accent: '#t-accent'
+              paceGreen: ['#t-green-1', '#t-green-2', '#t-green-3', '#t-green-4', '#t-green-5']
+              paceRed: ['#t-red-1', '#t-red-2', '#t-red-3', '#t-red-4', '#t-red-5']
+            usedPercent: 25
+            windowMs: 1000000
+        result: '#t-red-1'
+      # Beyond one full step takes the second red step.
+      - constructorParams: []
+        params:
+          - nowMs: 0
+            resetAt: 1000000
+            theme:
+              accent: '#t-accent'
+              paceGreen: ['#t-green-1', '#t-green-2', '#t-green-3', '#t-green-4', '#t-green-5']
+              paceRed: ['#t-red-1', '#t-red-2', '#t-red-3', '#t-red-4', '#t-red-5']
+            usedPercent: 30
+            windowMs: 1000000
+        result: '#t-red-2'
+      # Three steps of drift takes the third red step.
+      - constructorParams: []
+        params:
+          - nowMs: 0
+            resetAt: 500000
+            theme:
+              accent: '#t-accent'
+              paceGreen: ['#t-green-1', '#t-green-2', '#t-green-3', '#t-green-4', '#t-green-5']
+              paceRed: ['#t-red-1', '#t-red-2', '#t-red-3', '#t-red-4', '#t-red-5']
+            usedPercent: 115
+            windowMs: 1000000
+        result: '#t-red-3'
+      # Any drift past the last step clamps to the fifth red step.
+      - constructorParams: []
+        params:
+          - nowMs: 0
+            resetAt: 1000000
+            theme:
+              accent: '#t-accent'
+              paceGreen: ['#t-green-1', '#t-green-2', '#t-green-3', '#t-green-4', '#t-green-5']
+              paceRed: ['#t-red-1', '#t-red-2', '#t-red-3', '#t-red-4', '#t-red-5']
+            usedPercent: 999
+            windowMs: 1000000
+        result: '#t-red-5'
+      # Slower than the clock takes the second green step.
+      - constructorParams: []
+        params:
+          - nowMs: 0
+            resetAt: 700000
+            theme:
+              accent: '#t-accent'
+              paceGreen: ['#t-green-1', '#t-green-2', '#t-green-3', '#t-green-4', '#t-green-5']
+              paceRed: ['#t-red-1', '#t-red-2', '#t-red-3', '#t-red-4', '#t-red-5']
+            usedPercent: 0
+            windowMs: 1000000
+        result: '#t-green-2'
+      # An empty window fully elapsed clamps to the fifth green step.
+      - constructorParams: []
+        params:
+          - nowMs: 2000000
+            resetAt: 1000000
+            theme:
+              accent: '#t-accent'
+              paceGreen: ['#t-green-1', '#t-green-2', '#t-green-3', '#t-green-4', '#t-green-5']
+              paceRed: ['#t-red-1', '#t-red-2', '#t-red-3', '#t-red-4', '#t-red-5']
+            usedPercent: 0
+            windowMs: 1000000
+        result: '#t-green-5'
+      # A reset further out than the window clamps elapsed to zero.
+      - constructorParams: []
+        params:
+          - nowMs: 0
+            resetAt: 2000000
+            theme:
+              accent: '#t-accent'
+              paceGreen: ['#t-green-1', '#t-green-2', '#t-green-3', '#t-green-4', '#t-green-5']
+              paceRed: ['#t-red-1', '#t-red-2', '#t-red-3', '#t-red-4', '#t-red-5']
+            usedPercent: 4
+            windowMs: 1000000
+        result: '#t-accent'

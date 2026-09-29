@@ -1,0 +1,84 @@
+# Contract for the mobile WebSocket client against the desktop server. The
+# pure backoff helper doubles the base delay per failed attempt (1 s, 2 s,
+# 4 s, ...) capped at the 30 s max, and the attempt count resets on every
+# successful open. Incoming messages are parsed with the ws schema before
+# reaching listeners, so unparseable payloads are dropped without crashing.
+# The watchdog closes the socket after 75 s without any message (heartbeats
+# included), and that close drives the normal reconnect path. disconnect
+# stops reconnection entirely: status ends idle and no further socket is
+# created. The harness injects a fake WebSocket class as the global and
+# drives the timer scenarios on fake timers (Date faked so construction
+# timestamps line up with the fake clock).
+subject: wsClientServiceContractHarness
+module: ./__tests__/_ws-client-service-contract-harness.js
+subjectType: function
+methods:
+  resolveNextReconnectDelayMs:
+    terms:
+      # First attempt waits the base delay.
+      - params:
+          - attemptCount: 0
+        result: 1000
+      # Each further attempt doubles the previous delay.
+      - params:
+          - attemptCount: 1
+        result: 2000
+      - params:
+          - attemptCount: 3
+        result: 8000
+      # The doubling caps at the max delay.
+      - params:
+          - attemptCount: 5
+        result: 30000
+      - params:
+          - attemptCount: 12
+        result: 30000
+  reconnectBackoffSequenceAndResetOnOpen:
+    terms:
+      # Six consecutive failures back off 1s through 30s (capped at attempt
+      # five), then a successful open resets the count so the next failure
+      # waits the base delay again.
+      - params:
+          - url: 'ws://192.168.1.10:8787/ws?token=pairing-token'
+        result:
+          delayAfterReset: 1000
+          delays:
+            - 1000
+            - 2000
+            - 4000
+            - 8000
+            - 16000
+            - 30000
+  deliversValidMessagesAndIgnoresInvalid:
+    terms:
+      # Only the schema-valid heartbeat reaches listeners; a shape-invalid
+      # session-finished payload and a non-json string are ignored.
+      - params:
+          - url: 'ws://192.168.1.10:8787/ws?token=pairing-token'
+        result:
+          receivedTypes:
+            - heartbeat
+  watchdogClosesSilentConnection:
+    terms:
+      # A message 65 s in resets the watchdog so the socket survives past
+      # the original window; 75 s after the last message the watchdog closes
+      # it and the reconnect path opens a replacement socket.
+      - params:
+          - url: 'ws://192.168.1.10:8787/ws?token=pairing-token'
+        result:
+          closedBeforeSilenceWindow: false
+          firstSocketClosedAfterWindow: true
+          socketCount: 2
+  disconnectCancelsPendingReconnect:
+    terms:
+      # Disconnect after a close cancels the scheduled reconnect: status ends
+      # idle and no second socket is ever created.
+      - params:
+          - url: 'ws://192.168.1.10:8787/ws?token=pairing-token'
+        result:
+          socketCount: 1
+          statuses:
+            - CONNECTING
+            - OPEN
+            - CLOSED
+            - IDLE

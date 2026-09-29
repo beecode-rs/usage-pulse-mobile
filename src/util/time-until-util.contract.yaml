@@ -1,0 +1,44 @@
+# Contract for timeUntilUtil.
+# resolveTimeUntil answers "how long until this usage window resets" in a
+# compact human form: days plus hours once a day or more remains, hours plus
+# minutes below that, bare minutes under an hour, and "under 1m" for a
+# sub-minute remainder. A window without a reset timestamp is unknown and
+# renders as an empty string; a reset time already passed reads "now". The
+# wording mirrors the desktop dateUtil.formatDuration output so both apps
+# show the same countdown style.
+subject: timeUntilUtil
+module: ./time-until-util.js
+subjectType: function
+methods:
+  resolveTimeUntil:
+    terms:
+      # No reset timestamp: unknown, so nothing is shown.
+      - params:
+          - nowMs: 1000
+            resetAt: !undefined
+        result: ''
+      # The reset time already passed: it resets now.
+      - params:
+          - nowMs: 5000
+            resetAt: 1000
+        result: now
+      # A sub-minute remainder reads as under a minute.
+      - params:
+          - nowMs: 1000
+            resetAt: 31000
+        result: under 1m
+      # Below one hour only minutes are shown.
+      - params:
+          - nowMs: 1000
+            resetAt: 1801000
+        result: 30m
+      # The canonical form: hours and minutes.
+      - params:
+          - nowMs: 1000
+            resetAt: 4321000
+        result: 1h 12m
+      # A day or more rolls into days plus hours.
+      - params:
+          - nowMs: 1000
+            resetAt: 93601000
+        result: 1d 2h

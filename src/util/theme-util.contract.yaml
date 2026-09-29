@@ -1,0 +1,114 @@
+# Contract for themeUtil.
+# resolveScheme collapses the selected theme mode and the device system scheme
+# into the concrete scheme the app renders with: dark and light are forced
+# regardless of the system, auto follows the system, and a system that reports
+# no preference falls back to dark. resolvePalette maps that scheme to the
+# matching palette object. resolveThemeMode parses a persisted raw string back
+# into a theme mode, falling back to the configured default for anything
+# unrecognized or missing.
+subject: themeUtil
+module: ./theme-util.js
+subjectType: function
+methods:
+  resolvePalette:
+    terms:
+      # A forced dark mode ignores the light system scheme.
+      - params:
+          - mode: dark
+            systemScheme: light
+        result:
+          accent: '#3987e5'
+          background: '#0d0d0d'
+          card: '#1a1a19'
+          critical: '#d03b3b'
+          good: '#0ca30c'
+          hairline: 'rgba(255, 255, 255, 0.1)'
+          muted: '#898781'
+          paceGreen: ['#2aa2c1', '#28b89b', '#27b079', '#1fad3b', '#0ca30c']
+          paceRed: ['#423bde', '#863bdb', '#d73ad4', '#d33a85', '#d03b3b']
+          serious: '#ec835a'
+          sessionWaiting: '#a78bfa'
+          subtleTint: 'rgba(255, 255, 255, 0.04)'
+          text: '#ffffff'
+          track: '#2c2c2a'
+          warning: '#fab219'
+          warningBorder: '#fab21980'
+          warningTint: '#fab2191f'
+          warningTrack: '#fab21938'
+      # Auto mode with a light system scheme renders the light palette.
+      - params:
+          - mode: auto
+            systemScheme: light
+        result:
+          accent: '#2563eb'
+          background: '#f6f5f3'
+          card: '#ffffff'
+          critical: '#b91c1c'
+          good: '#15803d'
+          hairline: 'rgba(0, 0, 0, 0.1)'
+          muted: '#6f6d67'
+          paceGreen: ['#0e7490', '#0891b2', '#0d9488', '#16a34a', '#15803d']
+          paceRed: ['#4f46e5', '#7c3aed', '#c026d3', '#db2777', '#dc2626']
+          serious: '#c2410c'
+          sessionWaiting: '#7c3aed'
+          subtleTint: 'rgba(0, 0, 0, 0.05)'
+          text: '#1c1c1a'
+          track: '#e7e6e2'
+          warning: '#a16207'
+          warningBorder: '#a1620780'
+          warningTint: '#a162071f'
+          warningTrack: '#a1620738'
+  resolveScheme:
+    terms:
+      # A forced dark mode ignores the light system scheme.
+      - params:
+          - mode: dark
+            systemScheme: light
+        result: dark
+      # A forced light mode ignores the dark system scheme.
+      - params:
+          - mode: light
+            systemScheme: dark
+        result: light
+      # Auto follows a light system.
+      - params:
+          - mode: auto
+            systemScheme: light
+        result: light
+      # Auto follows a dark system.
+      - params:
+          - mode: auto
+            systemScheme: dark
+        result: dark
+      # Auto with no system preference falls back to dark.
+      - params:
+          - mode: auto
+            systemScheme: null
+        result: dark
+      # Auto with an unspecified system preference also falls back to dark.
+      - params:
+          - mode: auto
+            systemScheme: unspecified
+        result: dark
+  resolveThemeMode:
+    terms:
+      # A persisted auto round-trips.
+      - params:
+          - rawMode: auto
+        result: auto
+      # A persisted dark round-trips.
+      - params:
+          - rawMode: dark
+        result: dark
+      # A persisted light round-trips.
+      - params:
+          - rawMode: light
+        result: light
+      # Nothing persisted yet answers the configured default.
+      - params:
+          - rawMode: null
+        result: auto
+      # An unrecognized persisted value answers the configured default.
+      - params:
+          - rawMode: high-contrast
+        result: auto

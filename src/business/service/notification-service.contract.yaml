@@ -1,0 +1,91 @@
+# Contract for the tray behavior of NotificationService. Presenting a
+# notification for a session replaces that session's earlier notification in
+# the tray, because every session notification is scheduled under a stable
+# identifier derived from the session id (Android and iOS both replace a
+# notification that reuses an identifier). So only the latest status of a
+# session stays presented, and the replacement survives a recreated service
+# (an app restart). Usage warnings carry no session id, get a fresh
+# identifier, and never replace anything; a denied permission schedules
+# nothing. The harness mocks expo-notifications with an in-memory tray keyed
+# by identifier, cleared per scenario.
+subject: notificationServiceContractHarness
+module: ./__tests__/_notification-service-contract-harness.js
+subjectType: function
+methods:
+  presentOnAndroidRoutesSoundToItsChannel:
+    terms:
+      # Android fixes a channel's sound at creation, so every session sound
+      # gets its own channel (named after the sound, created once, "none" is
+      # a silent channel with a null sound, "system-default" sets no sound so
+      # the device default plays) and each notification is
+      # triggered on the channel of its sound. Usage warnings keep the alerts
+      # channel, which sets no sound and so plays the system default.
+      - params: []
+        result:
+          channels:
+            - id: usage-pulse-session-sound-success
+              name: Session alerts · Success
+              sound: success.wav
+            - id: usage-pulse-session-sound-chime
+              name: Session alerts · Chime
+              sound: chime.wav
+            - id: usage-pulse-session-sound-none
+              name: Session alerts · None
+              sound: null
+            - id: usage-pulse-session-sound-system-default
+              name: Session alerts · System default
+            - id: usage-pulse-alerts
+              name: Usage Pulse alerts
+          triggerChannelIds:
+            - usage-pulse-session-sound-success
+            - usage-pulse-session-sound-chime
+            - usage-pulse-session-sound-none
+            - usage-pulse-session-sound-success
+            - usage-pulse-session-sound-system-default
+            - usage-pulse-alerts
+  presentForSameSessionTwice:
+    terms:
+      # The second finish of the same session replaces the first in the tray.
+      - params: []
+        result:
+          bodies: [finished-second]
+  presentForDifferentSessions:
+    terms:
+      # Finishes of different sessions coexist in the tray.
+      - params: []
+        result:
+          bodies: [finished-first, finished-second]
+  presentWithoutSessionIdTwice:
+    terms:
+      # Usage warnings have no session id, so both stay presented.
+      - params: []
+        result:
+          bodies: ['Claude · 5-hour window 90%', 'Claude · 5-hour window 95%']
+  presentWaitingAfterFinishedForSameSession:
+    terms:
+      # A waiting notification replaces the earlier finished notification of
+      # the same session, so the tray holds the session's latest status only.
+      - params: []
+        result:
+          bodies: ["fix-login (bug)\n/home/milos/code/usage-pulse"]
+  presentFinishedAfterWaitingForSameSession:
+    terms:
+      # Once the waiting session is answered and finishes, the finished
+      # notification replaces the stale waiting one.
+      - params: []
+        result:
+          titles: [✅ Finished]
+  presentAfterServiceRecreated:
+    terms:
+      # A fresh service instance still replaces the session's old
+      # notification, because the identifier comes from the session id, not
+      # from memory.
+      - params: []
+        result:
+          bodies: [finished-second]
+  presentWhenPermissionDenied:
+    terms:
+      # Without permission nothing reaches the tray.
+      - params: []
+        result:
+          bodies: []

@@ -1,0 +1,87 @@
+# Contract for usageSeverityUtil.
+# resolveSeverityLevel answers "how loaded is a usage window" as one of four
+# bands over the used percent, mirroring the desktop shared util the mobile
+# schemas were copied from: below the filling-up threshold nothing is
+# reported; from that threshold up to (excluding) high usage the window is
+# filling up; from there up to (excluding) the limit usage is high; at or
+# above the limit the limit is reached. Boundaries are inclusive upward:
+# exactly 70 is filling up, exactly 85 is high usage, exactly 95 is limit
+# reached. resolveSeverityColor maps each band to the matching key of the
+# caller-provided theme palette, so the terms pass a sentinel palette and
+# assert the band picks the right key.
+subject: usageSeverityUtil
+module: ./usage-severity-util.js
+subjectType: function
+methods:
+  resolveSeverityColor:
+    terms:
+      # The none band keeps the calm accent blue.
+      - params:
+          - theme:
+              accent: '#t-accent'
+              critical: '#t-critical'
+              serious: '#t-serious'
+              warning: '#t-warning'
+            usedPercent: 50
+        result: '#t-accent'
+      # Filling up turns the meter warning yellow.
+      - params:
+          - theme:
+              accent: '#t-accent'
+              critical: '#t-critical'
+              serious: '#t-serious'
+              warning: '#t-warning'
+            usedPercent: 75
+        result: '#t-warning'
+      # High usage escalates to the serious orange.
+      - params:
+          - theme:
+              accent: '#t-accent'
+              critical: '#t-critical'
+              serious: '#t-serious'
+              warning: '#t-warning'
+            usedPercent: 90
+        result: '#t-serious'
+      # Limit reached is the critical red.
+      - params:
+          - theme:
+              accent: '#t-accent'
+              critical: '#t-critical'
+              serious: '#t-serious'
+              warning: '#t-warning'
+            usedPercent: 97
+        result: '#t-critical'
+  resolveSeverityLevel:
+    terms:
+      # Far inside the none band: nothing to report.
+      - params:
+          - usedPercent: 0
+        result: NONE
+      # Just below the filling-up boundary stays none.
+      - params:
+          - usedPercent: 69
+        result: NONE
+      # The exact filling-up boundary belongs to the filling-up band.
+      - params:
+          - usedPercent: 70
+        result: FILLING_UP
+      # The rest of the filling-up band, just below high usage.
+      - params:
+          - usedPercent: 84
+        result: FILLING_UP
+      # The exact high-usage boundary belongs to the high-usage band.
+      - params:
+          - usedPercent: 85
+        result: HIGH_USAGE
+      # The rest of the high-usage band, just below the limit.
+      - params:
+          - usedPercent: 94
+        result: HIGH_USAGE
+      # The exact limit-reached boundary belongs to the limit-reached band.
+      - params:
+          - usedPercent: 95
+        result: LIMIT_REACHED
+      # Above the limit stays limit reached, however far over.
+      - params:
+          - usedPercent: 100
+        result: LIMIT_REACHED

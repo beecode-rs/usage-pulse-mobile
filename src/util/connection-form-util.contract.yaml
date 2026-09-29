@@ -1,0 +1,114 @@
+# Contract for connectionFormUtil. An empty port field is not an error: it
+# resolves to the desktop default port (8787), so both Save and Test
+# connection work with the port left blank. resolveConfigOrErrorMessage is
+# the Test connection gate: it names every missing field (blank host or
+# token counts as missing) and reuses the port range message for a
+# non-empty invalid port, or returns the ready-to-use ConnectionConfig.
+subject: connectionFormUtil
+module: ./connection-form-util.js
+subjectType: function
+methods:
+  resolveConfigOrErrorMessage:
+    terms:
+      # A filled form resolves to the config with the parsed port.
+      - params:
+          - host: '100.101.102.103'
+            port: '9000'
+            token: pairing-token
+        result:
+          config:
+            host: '100.101.102.103'
+            port: 9000
+            token: pairing-token
+      # An empty port falls back to the default desktop port.
+      - params:
+          - host: '100.101.102.103'
+            port: ''
+            token: pairing-token
+        result:
+          config:
+            host: '100.101.102.103'
+            port: 8787
+            token: pairing-token
+      # A blank host names the missing field.
+      - params:
+          - host: ''
+            port: '8787'
+            token: pairing-token
+        result:
+          errorMessage: 'Missing: Host'
+      # A blank token names the missing field.
+      - params:
+          - host: '100.101.102.103'
+            port: '8787'
+            token: ''
+        result:
+          errorMessage: 'Missing: Token'
+      # Whitespace-only input counts as blank.
+      - params:
+          - host: '  '
+            port: '8787'
+            token: ' '
+        result:
+          errorMessage: 'Missing: Host, Token'
+      # A non-numeric port keeps the port range message.
+      - params:
+          - host: '100.101.102.103'
+            port: abc
+            token: pairing-token
+        result:
+          errorMessage: 'Port must be a number between 1024 and 65535'
+      # An out-of-range port keeps the port range message.
+      - params:
+          - host: '100.101.102.103'
+            port: '70000'
+            token: pairing-token
+        result:
+          errorMessage: 'Port must be a number between 1024 and 65535'
+  resolvePortNumber:
+    terms:
+      # Empty port resolves to the default desktop port.
+      - params:
+          - port: ''
+        result: 8787
+      # A digits-only in-range port parses to its number.
+      - params:
+          - port: '9000'
+        result: 9000
+      # The range boundaries are inclusive.
+      - params:
+          - port: '1024'
+        result: 1024
+      - params:
+          - port: '65535'
+        result: 65535
+      # Non-digits do not resolve.
+      - params:
+          - port: abc
+        result: !undefined
+      # Below the minimum does not resolve.
+      - params:
+          - port: '1023'
+        result: !undefined
+      # Above the maximum does not resolve.
+      - params:
+          - port: '65536'
+        result: !undefined
+  resolvePortErrorMessage:
+    terms:
+      # Empty port is valid (it defaults), so no error.
+      - params:
+          - port: ''
+        result: !undefined
+      # A valid port has no error.
+      - params:
+          - port: '8787'
+        result: !undefined
+      # Non-digits get the range message.
+      - params:
+          - port: abc
+        result: 'Port must be a number between 1024 and 65535'
+      # Out of range gets the range message.
+      - params:
+          - port: '1023'
+        result: 'Port must be a number between 1024 and 65535'

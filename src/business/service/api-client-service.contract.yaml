@@ -1,0 +1,117 @@
+# Contract for the REST api client against the desktop mobile server. The
+# URL builders normalize whatever the user typed (http/https scheme prefix,
+# trailing slash) into the http base url and the authenticated ws url
+# (token query-param encoded, because React Native WebSocket cannot set
+# headers). Every fetch outcome maps to exactly one ApiClientErrorMapper
+# value: a 401 response maps to unauthorized, a rejected fetch maps to
+# network, the 5 s AbortController timeout firing maps to timeout, and a
+# 200 body the zod schema rejects maps to invalid-response. The harness
+# stubs the global fetch per scenario; the timeout scenario installs fake
+# timers and advances them past constant.apiClient.timeoutMs so the real
+# AbortController wiring is exercised end to end.
+subject: apiClientServiceContractHarness
+module: ./__tests__/_api-client-service-contract-harness.js
+subjectType: function
+methods:
+  resolveApiBaseUrl:
+    terms:
+      # Bare vpn host plus port.
+      - params:
+          - host: 100.101.102.103
+            port: 8787
+        result: 'http://100.101.102.103:8787'
+      # http scheme prefix is stripped.
+      - params:
+          - host: http://100.101.102.103
+            port: 8787
+        result: 'http://100.101.102.103:8787'
+      # https scheme prefix and trailing slash are stripped; the api is always plain http.
+      - params:
+          - host: https://desktop.local/
+            port: 9000
+        result: 'http://desktop.local:9000'
+  resolveWsUrl:
+    terms:
+      # Bare host builds the authenticated ws url.
+      - params:
+          - host: 100.101.102.103
+            port: 8787
+            token: pairing-token
+        result: 'ws://100.101.102.103:8787/ws?token=pairing-token'
+      # Scheme and slash normalization plus token encoding for url-unsafe characters.
+      - params:
+          - host: http://desktop.local/
+            port: 8787
+            token: 'a b/c&d'
+        result: 'ws://desktop.local:8787/ws?token=a%20b%2Fc%26d'
+  fetchHealthWhenOk:
+    terms:
+      # A 200 health body parses to the health response.
+      - params:
+          - config:
+              host: 192.168.1.10
+              port: 8787
+              token: pairing-token
+        result:
+          data:
+            appVersion: '1.2.3'
+            ok: true
+          success: true
+  fetchHealthWhenUnauthorized:
+    terms:
+      # A 401 response maps to unauthorized without touching the body.
+      - params:
+          - config:
+              host: 192.168.1.10
+              port: 8787
+              token: wrong-token
+        result:
+          error: unauthorized
+          success: false
+  fetchHealthWhenInvalidResponse:
+    terms:
+      # A 200 body missing appVersion fails the zod schema and maps to invalid-response.
+      - params:
+          - config:
+              host: 192.168.1.10
+              port: 8787
+              token: pairing-token
+        result:
+          error: invalid-response
+          success: false
+  fetchStateWhenOk:
+    terms:
+      # A 200 state body parses; sessions is null before the first sessions poll.
+      - params:
+          - config:
+              host: 192.168.1.10
+              port: 8787
+              token: pairing-token
+        result:
+          data:
+            sessions: null
+            usage:
+              providers: []
+          success: true
+  fetchWhenNetworkError:
+    terms:
+      # A rejected fetch maps to network.
+      - params:
+          - config:
+              host: 192.168.1.10
+              port: 8787
+              token: pairing-token
+        result:
+          error: network
+          success: false
+  fetchWhenTimedOut:
+    terms:
+      # The fetch hanging past the timeout aborts and maps to timeout.
+      - params:
+          - config:
+              host: 192.168.1.10
+              port: 8787
+              token: pairing-token
+        result:
+          error: timeout
+          success: false

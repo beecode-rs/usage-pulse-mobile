@@ -1,0 +1,293 @@
+# Contract for the state sync service that applies desktop ws messages to the
+# app state store. The pure reducer resolveNextState maps each message type to
+# the next state: a state message replaces both usage and sessions (a null
+# sessions payload clears the section to undefined), usage-snapshot and
+# sessions-snapshot replace only their own section, a heartbeat records
+# lastHeartbeatAt, and session-finished, session-waiting, and usage-warning
+# leave the state unchanged because they exist for notification listeners.
+# dispatchMessage applies the reducer to the store and forwards only the three
+# notification worthy message types to registered listeners.
+subject: stateSyncContractHarness
+module: ./__tests__/_state-sync-service-contract-harness.js
+subjectType: function
+methods:
+  dispatchAppliesToStoreAndForwardsNotifications:
+    terms:
+      # After a store reset, a heartbeat reaches the store while only
+      # session-finished, session-waiting, and usage-warning reach the
+      # notification listener.
+      - params: []
+        result:
+          connectionStatus: IDLE
+          forwardedTypes:
+            - session-finished
+            - session-waiting
+            - usage-warning
+          lastHeartbeatAt: 222
+          sessions: null
+          usage: null
+  resolveNextState:
+    terms:
+      # A state message replaces usage and sessions wholesale.
+      - params:
+          - message:
+              sessions:
+                fetchedAt: 222
+                sessions:
+                  - cwd: /tmp/other
+                    kind: claude-code
+                    name: builder
+                    pid: 2
+                    sessionId: session-2
+                    startedAt: 222
+                    status: busy
+                unreachableHosts: []
+              type: state
+              usage:
+                providers:
+                  - providerId: claude
+                    status: OK
+                    trackerId: tracker-b
+                    trackerName: Tracker b
+                    usage:
+                      - label: 5h
+                        usedPercent: 42
+            state:
+              connectionStatus: OPEN
+              lastHeartbeatAt: 111
+              sessions:
+                fetchedAt: 111
+                sessions: []
+                unreachableHosts: []
+              usage:
+                providers: []
+        result:
+          connectionStatus: OPEN
+          lastHeartbeatAt: 111
+          sessions:
+            fetchedAt: 222
+            sessions:
+              - cwd: /tmp/other
+                kind: claude-code
+                name: builder
+                pid: 2
+                sessionId: session-2
+                startedAt: 222
+                status: busy
+            unreachableHosts: []
+          usage:
+            providers:
+              - providerId: claude
+                status: OK
+                trackerId: tracker-b
+                trackerName: Tracker b
+                usage:
+                  - label: 5h
+                    usedPercent: 42
+      # A state message before the first sessions poll clears the section.
+      - params:
+          - message:
+              sessions: null
+              type: state
+              usage:
+                providers: []
+            state:
+              connectionStatus: OPEN
+              lastHeartbeatAt: 111
+              sessions:
+                fetchedAt: 111
+                sessions: []
+                unreachableHosts: []
+              usage:
+                providers:
+                  - providerId: zai
+                    status: OK
+                    trackerId: tracker-z
+                    trackerName: Tracker z
+        result:
+          connectionStatus: OPEN
+          lastHeartbeatAt: 111
+          sessions: !undefined
+          usage:
+            providers: []
+      # A usage-snapshot message replaces usage and preserves sessions.
+      - params:
+          - message:
+              type: usage-snapshot
+              usage:
+                providers:
+                  - providerId: zai
+                    status: PENDING
+                    trackerId: tracker-z
+                    trackerName: Tracker z
+                    usage:
+                      - label: weekly
+                        usedPercent: 64
+            state:
+              connectionStatus: CONNECTING
+              lastHeartbeatAt: 111
+              sessions:
+                fetchedAt: 111
+                sessions: []
+                unreachableHosts: []
+              usage:
+                providers: []
+        result:
+          connectionStatus: CONNECTING
+          lastHeartbeatAt: 111
+          sessions:
+            fetchedAt: 111
+            sessions: []
+            unreachableHosts: []
+          usage:
+            providers:
+              - providerId: zai
+                status: PENDING
+                trackerId: tracker-z
+                trackerName: Tracker z
+                usage:
+                  - label: weekly
+                    usedPercent: 64
+      # A sessions-snapshot message replaces sessions and preserves usage.
+      - params:
+          - message:
+              sessions:
+                fetchedAt: 333
+                sessions: []
+                unreachableHosts:
+                  - errorMessage: host unreachable
+                    hostId: host-1
+                    hostLabel: office-desktop
+              type: sessions-snapshot
+            state:
+              connectionStatus: OPEN
+              lastHeartbeatAt: 111
+              sessions:
+                fetchedAt: 111
+                sessions: []
+                unreachableHosts: []
+              usage:
+                providers: []
+        result:
+          connectionStatus: OPEN
+          lastHeartbeatAt: 111
+          sessions:
+            fetchedAt: 333
+            sessions: []
+            unreachableHosts:
+              - errorMessage: host unreachable
+                hostId: host-1
+                hostLabel: office-desktop
+          usage:
+            providers: []
+      # A heartbeat message records its timestamp.
+      - params:
+          - message:
+              at: 222
+              type: heartbeat
+            state:
+              connectionStatus: OPEN
+              lastHeartbeatAt: 111
+              sessions:
+                fetchedAt: 111
+                sessions: []
+                unreachableHosts: []
+              usage:
+                providers: []
+        result:
+          connectionStatus: OPEN
+          lastHeartbeatAt: 222
+          sessions:
+            fetchedAt: 111
+            sessions: []
+            unreachableHosts: []
+          usage:
+            providers: []
+      # A session-finished message leaves the state unchanged.
+      - params:
+          - message:
+              session:
+                cwd: /tmp/project
+                kind: claude-code
+                name: builder
+                pid: 7
+                sessionId: session-7
+                startedAt: 111
+                status: idle
+              type: session-finished
+            state:
+              connectionStatus: OPEN
+              lastHeartbeatAt: 111
+              sessions:
+                fetchedAt: 111
+                sessions: []
+                unreachableHosts: []
+              usage:
+                providers: []
+        result:
+          connectionStatus: OPEN
+          lastHeartbeatAt: 111
+          sessions:
+            fetchedAt: 111
+            sessions: []
+            unreachableHosts: []
+          usage:
+            providers: []
+      # A session-waiting message leaves the state unchanged.
+      - params:
+          - message:
+              session:
+                cwd: /tmp/project
+                kind: claude-code
+                name: builder
+                pid: 7
+                sessionId: session-7
+                startedAt: 111
+                status: waiting
+              type: session-waiting
+            state:
+              connectionStatus: OPEN
+              lastHeartbeatAt: 111
+              sessions:
+                fetchedAt: 111
+                sessions: []
+                unreachableHosts: []
+              usage:
+                providers: []
+        result:
+          connectionStatus: OPEN
+          lastHeartbeatAt: 111
+          sessions:
+            fetchedAt: 111
+            sessions: []
+            unreachableHosts: []
+          usage:
+            providers: []
+      # A usage-warning message leaves the state unchanged.
+      - params:
+          - message:
+              type: usage-warning
+              warning:
+                reason: high-usage
+                trackerId: tracker-b
+                trackerName: Tracker b
+                usedPercent: 90
+                windowLabel: 5h
+            state:
+              connectionStatus: OPEN
+              lastHeartbeatAt: 111
+              sessions:
+                fetchedAt: 111
+                sessions: []
+                unreachableHosts: []
+              usage:
+                providers: []
+        result:
+          connectionStatus: OPEN
+          lastHeartbeatAt: 111
+          sessions:
+            fetchedAt: 111
+            sessions: []
+            unreachableHosts: []
+          usage:
+            providers: []

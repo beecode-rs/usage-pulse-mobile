@@ -1,0 +1,144 @@
+# Contract for notificationMappingUtil.
+# resolveNotification maps a live ws message to the title and body of a local
+# notification. A finished session is titled "✅ Finished" and a session that
+# started waiting for input "🙋 Needs you", both over a two-line body: the
+# resolved session title label (name, else transcript aiTitle, else the cwd
+# basename, with a hyphen suffix rendered in parentheses), then the cwd on its
+# own line. A finished session plays the configured finished sound; a
+# waiting session plays the configured waiting sound and carries the purple
+# waiting accent color so it stands out. Both
+# carry the session id so the presenter can replace the session's previous
+# notification; a usage warning is titled by its reason (High usage /
+# Limit reached / Provider error) with a body of "tracker . window percent%"
+# for the two percent reasons and the provider error message otherwise, and
+# carries no session id. Every other message type carries nothing worth
+# notifying about and maps to undefined.
+subject: notificationMappingUtil
+module: ./notification-mapping-util.js
+subjectType: function
+methods:
+  resolveNotification:
+    terms:
+      # A finished session names the session and its folder; a hyphenated
+      # name renders its suffix in parentheses, as the session row does.
+      - params:
+          - message:
+              session:
+                cwd: /home/milos/code/usage-pulse
+                kind: claude
+                name: fix-login-bug
+                pid: 1234
+                sessionId: session-1
+                startedAt: 1700000000000
+                status: idle
+              type: session-finished
+            soundConfig:
+              sessionFinishedSoundId: success
+              waitingSoundId: chime
+        result:
+          body: "fix-login (bug)\n/home/milos/code/usage-pulse"
+          sessionId: session-1
+          soundId: success
+          title: ✅ Finished
+      # A finished session without a name falls back to the cwd basename,
+      # split like any other title.
+      - params:
+          - message:
+              session:
+                cwd: /home/milos/code/usage-pulse
+                kind: claude
+                name: ''
+                pid: 1234
+                sessionId: session-2
+                startedAt: 1700000000000
+                status: idle
+              type: session-finished
+            soundConfig:
+              sessionFinishedSoundId: success
+              waitingSoundId: chime
+        result:
+          body: "usage (pulse)\n/home/milos/code/usage-pulse"
+          sessionId: session-2
+          soundId: success
+          title: ✅ Finished
+      # A session that started waiting for input names the session like a
+      # finished one, only the title differs.
+      - params:
+          - message:
+              session:
+                cwd: /home/milos/code/usage-pulse
+                kind: claude
+                name: fix-login-bug
+                pid: 1234
+                sessionId: session-1
+                startedAt: 1700000000000
+                status: waiting
+              type: session-waiting
+            soundConfig:
+              sessionFinishedSoundId: success
+              waitingSoundId: chime
+        result:
+          accentColor: '#a78bfa'
+          body: "fix-login (bug)\n/home/milos/code/usage-pulse"
+          sessionId: session-1
+          soundId: chime
+          title: 🙋 Needs you
+      # Crossing the high usage threshold names the tracker, window, percent.
+      - params:
+          - message:
+              type: usage-warning
+              warning:
+                reason: high-usage
+                trackerId: claude
+                trackerName: Claude
+                usedPercent: 90
+                windowLabel: 5-hour window
+        result:
+          body: Claude · 5-hour window 90%
+          title: High usage
+      # Crossing the limit threshold only changes the title wording.
+      - params:
+          - message:
+              type: usage-warning
+              warning:
+                reason: limit-reached
+                trackerId: zai
+                trackerName: z.ai
+                usedPercent: 96
+                windowLabel: Weekly window
+        result:
+          body: z.ai · Weekly window 96%
+          title: Limit reached
+      # A provider error surfaces the desktop's error message as the body.
+      - params:
+          - message:
+              type: usage-warning
+              warning:
+                errorMessage: provider unreachable
+                reason: provider-error
+                trackerId: claude
+                trackerName: Claude
+        result:
+          body: provider unreachable
+          title: Provider error
+      # Snapshots, state, and heartbeat messages are not notifiable.
+      - params:
+          - message:
+              at: 1700000000000
+              type: heartbeat
+        result: !undefined
+      - params:
+          - message:
+              type: state
+              usage: {}
+        result: !undefined
+      - params:
+          - message:
+              type: usage-snapshot
+              usage: {}
+        result: !undefined
+      - params:
+          - message:
+              sessions: []
+              type: sessions-snapshot
+        result: !undefined

@@ -1,0 +1,269 @@
+# Contract for sessionPresentationUtil.
+# The sessions half of the dashboard derives everything it shows from these
+# pure helpers: summary counts (total plus busy/idle/waiting/unknown status
+# counts and how many sessions are remote), the one-line summary label built
+# from them (mirroring the desktop wording, with unknown and remote parts
+# only when non-zero), the row title (name, else transcript aiTitle, else
+# the cwd basename, else a placeholder), the title parts split for row
+# rendering (name plus suffix around the last hyphen, as the desktop
+# renders it), the flat title label for plain-text surfaces like
+# notifications (the same split collapsed to "name (suffix)"), the
+# elapsed-time activity label built on timeUntilUtil, and the model label
+# with its -YYYYMMDD date suffix stripped.
+subject: sessionPresentationUtil
+module: ./session-presentation-util.js
+subjectType: function
+methods:
+  resolveLastActivityLabel:
+    terms:
+      # A transcript without a last activity timestamp shows nothing.
+      - params:
+          - lastActivityAt: !undefined
+            nowMs: 1000
+        result: ''
+      # Activity at this exact moment reads as active now.
+      - params:
+          - lastActivityAt: 31000
+            nowMs: 31000
+        result: active now
+      # Sub-minute elapsed time reads as active under a minute ago.
+      - params:
+          - lastActivityAt: 1000
+            nowMs: 31000
+        result: active under 1m ago
+      # Older activity reads as active plus the elapsed duration.
+      - params:
+          - lastActivityAt: 1000
+            nowMs: 4321000
+        result: active 1h 12m ago
+  resolveModelLabel:
+    terms:
+      # The -YYYYMMDD date suffix is stripped from model ids.
+      - params:
+          - model: claude-sonnet-4-20250514
+        result: claude-sonnet-4
+      # A model id without a date suffix is kept verbatim.
+      - params:
+          - model: gpt-5
+        result: gpt-5
+  resolveProjectLabel:
+    terms:
+      # The project label is the last non-empty path segment.
+      - params:
+          - cwd: /home/user/proj-a
+        result: proj-a
+      # A trailing slash still resolves to the folder name.
+      - params:
+          - cwd: /home/user/proj-a/
+        result: proj-a
+  resolveSessionTitle:
+    terms:
+      # A non-empty session name wins.
+      - params:
+          - session:
+              cwd: /home/user/proj-a
+              kind: claude
+              name: fix-login
+              pid: 1
+              sessionId: s1
+              startedAt: 1000
+              status: busy
+        result: fix-login
+      # An empty name falls back to the transcript ai title.
+      - params:
+          - session:
+              cwd: /home/user/proj-a
+              kind: claude
+              name: ''
+              pid: 1
+              sessionId: s1
+              startedAt: 1000
+              status: busy
+              transcript:
+                aiTitle: Refactor the login flow
+                cacheCreationTokens: 0
+                cacheReadTokens: 0
+                gitBranch: main
+                inputTokens: 0
+                lastPrompt: ''
+                model: claude-sonnet-4-20250514
+                outputTokens: 0
+                thinkingTokens: 0
+                userTurnsCount: 1
+                version: '1.0'
+        result: Refactor the login flow
+      # Without a name or transcript the cwd basename is the title.
+      - params:
+          - session:
+              cwd: /home/user/proj-b
+              kind: claude
+              name: ''
+              pid: 2
+              sessionId: s2
+              startedAt: 2000
+              status: idle
+        result: proj-b
+      # Nothing to show: the placeholder title.
+      - params:
+          - session:
+              cwd: ''
+              kind: claude
+              name: ''
+              pid: 3
+              sessionId: s3
+              startedAt: 3000
+              status: unknown
+        result: Unnamed session
+  resolveSessionTitleLabel:
+    terms:
+      # A resolved title with a suffix collapses to name with the suffix in parentheses.
+      - params:
+          - session:
+              cwd: /home/user/proj-a
+              kind: claude
+              name: fix-login-bug
+              pid: 1
+              sessionId: s1
+              startedAt: 1000
+              status: busy
+        result: fix-login (bug)
+      # A resolved title without a suffix reads verbatim.
+      - params:
+          - session:
+              cwd: /home/user/proj-a
+              kind: claude
+              name: Refactor the login flow
+              pid: 2
+              sessionId: s2
+              startedAt: 2000
+              status: idle
+        result: Refactor the login flow
+      # An empty name falls back through the chain to the cwd basename,
+      # which the split treats like any other title.
+      - params:
+          - session:
+              cwd: /home/user/proj-b
+              kind: claude
+              name: ''
+              pid: 3
+              sessionId: s3
+              startedAt: 3000
+              status: unknown
+        result: proj (b)
+  resolveSessionTitleParts:
+    terms:
+      # A title with one hyphen splits into name and suffix.
+      - params:
+          - title: fix-login
+        result:
+          name: fix
+          suffix: login
+      # A title with several hyphens splits at the last one.
+      - params:
+          - title: usage-pulse-mobile
+        result:
+          name: usage-pulse
+          suffix: mobile
+      # A title without a hyphen stays whole, with no suffix.
+      - params:
+          - title: Refactor the login flow
+        result:
+          name: Refactor the login flow
+          suffix: !undefined
+  resolveSessionsWord:
+    terms:
+      # Singular.
+      - params:
+          - total: 1
+        result: session
+      # Plural.
+      - params:
+          - total: 2
+        result: sessions
+  resolveSummaryCounts:
+    terms:
+      # Counts match a snapshot fixture mixing local and remote sessions
+      # across all four statuses.
+      - params:
+          - sessions:
+              - cwd: /home/user/proj-a
+                kind: claude
+                name: fix-login
+                pid: 1
+                sessionId: s1
+                startedAt: 1000
+                status: busy
+              - cwd: /home/user/proj-b
+                hostId: host-1
+                hostLabel: laptop
+                kind: claude
+                name: ''
+                pid: 2
+                sessionId: s2
+                startedAt: 2000
+                status: idle
+              - cwd: /home/user/proj-c
+                hostId: host-2
+                hostLabel: desktop
+                kind: claude
+                name: review
+                pid: 3
+                sessionId: s3
+                startedAt: 3000
+                status: waiting
+              - cwd: /home/user/proj-d
+                kind: claude
+                name: ''
+                pid: 4
+                sessionId: s4
+                startedAt: 4000
+                status: unknown
+        result:
+          busy: 1
+          idle: 1
+          remote: 2
+          total: 4
+          unknown: 1
+          waiting: 1
+      # An empty session list counts all zeros.
+      - params:
+          - sessions: []
+        result:
+          busy: 0
+          idle: 0
+          remote: 0
+          total: 0
+          unknown: 0
+          waiting: 0
+  resolveSummaryLine:
+    terms:
+      # Remote sessions append a remote part.
+      - params:
+          - counts:
+              busy: 1
+              idle: 0
+              remote: 2
+              total: 3
+              unknown: 0
+              waiting: 0
+        result: 3 sessions · 1 working · 0 waiting · 0 idle · 2 remote
+      # A single session reads singular and omits zero unknown/remote parts.
+      - params:
+          - counts:
+              busy: 1
+              idle: 0
+              remote: 0
+              total: 1
+              unknown: 0
+              waiting: 0
+        result: 1 session · 1 working · 0 waiting · 0 idle
+      # Unknown sessions append an unknown part before remote.
+      - params:
+          - counts:
+              busy: 0
+              idle: 1
+              remote: 0
+              total: 2
+              unknown: 1
+              waiting: 0
+        result: 2 sessions · 0 working · 0 waiting · 1 idle · 1 unknown

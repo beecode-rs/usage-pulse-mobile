@@ -1,0 +1,29 @@
+# Contract for the on-device theme mode persistence: saveMode serializes the
+# selected theme mode to AsyncStorage under the single storage key and loadMode
+# parses it back, falling back to the configured default mode when nothing is
+# stored or the stored value predates an unrecognized format. The harness
+# mocks AsyncStorage with an in-memory map cleared per scenario so terms stay
+# independent.
+subject: themeConfigServiceContractHarness
+module: ./__tests__/_theme-config-service-contract-harness.js
+subjectType: function
+methods:
+  loadAfterSave:
+    terms:
+      - params:
+          - mode: dark
+        result: dark
+      - params:
+          - mode: light
+        result: light
+      - params:
+          - mode: auto
+        result: auto
+  loadWhenStorageContainsInvalidValue:
+    terms:
+      - params: []
+        result: auto
+  loadWhenStorageEmpty:
+    terms:
+      - params: []
+        result: auto

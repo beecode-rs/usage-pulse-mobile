@@ -1,0 +1,58 @@
+# Contract for UsageStalenessUtil.
+# isSnapshotStale mirrors the desktop predicate one for one: a snapshot is
+# stale once it is older than the tracker refresh interval (strict >, so
+# exactly-at-interval still counts as fresh), and never stale when the
+# interval or fetchedAt is unknown. The interval now travels on the wire as
+# ProviderSnapshot.refreshIntervalMs, sent for paused trackers too, so a
+# paused tracker with old data reads stale here exactly like on the desktop.
+# All terms use a 5-minute interval anchored at fetchedAt 1787000000000.
+subject: UsageStalenessUtil
+module: ./usage-staleness-util.js
+subjectType: class
+constructor:
+  # A fresh instance carries no own fields, so it serializes as an empty object.
+  terms:
+    - params: []
+      result: {}
+methods:
+  isSnapshotStale:
+    terms:
+      # 1ms past a 5m interval: stale.
+      - constructorParams: []
+        params:
+          - nowMs: 1787000300001
+            providerSnapshot:
+              fetchedAt: 1787000000000
+            refreshIntervalMs: 300000
+        result: true
+      # Exactly at the interval boundary: still fresh, the comparison is strict.
+      - constructorParams: []
+        params:
+          - nowMs: 1787000300000
+            providerSnapshot:
+              fetchedAt: 1787000000000
+            refreshIntervalMs: 300000
+        result: false
+      # Halfway through the interval: fresh.
+      - constructorParams: []
+        params:
+          - nowMs: 1787000150000
+            providerSnapshot:
+              fetchedAt: 1787000000000
+            refreshIntervalMs: 300000
+        result: false
+      # Unknown interval (snapshot predates the refreshIntervalMs wire field): never stale.
+      - constructorParams: []
+        params:
+          - nowMs: 1787000300001
+            providerSnapshot:
+              fetchedAt: 1787000000000
+        result: false
+      # Never fetched: never stale, even for a paused tracker carrying its interval.
+      - constructorParams: []
+        params:
+          - nowMs: 1787000300001
+            providerSnapshot:
+              refreshIntervalMs: 300000
+            refreshIntervalMs: 300000
+        result: false

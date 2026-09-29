@@ -1,0 +1,7 @@
+node_modules
+dist
+coverage
+.expo
+pnpm-lock.yaml
+.env*
+*.json

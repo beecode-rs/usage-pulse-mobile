@@ -1,0 +1,56 @@
+# Contract for the on-device notification sound persistence: saveConfig
+# serializes the finished and waiting sound choices as JSON under one storage
+# key and loadConfig parses them back. Nothing stored, unparsable JSON, or a
+# non-object falls back to the desktop defaults (success when a session
+# finishes, chime when it needs input), and an unknown sound id falls back to
+# its own default without discarding the other valid choice. The harness
+# mocks AsyncStorage with an in-memory map cleared per scenario.
+subject: notificationSoundConfigServiceContractHarness
+module: ./__tests__/_notification-sound-config-service-contract-harness.js
+subjectType: function
+methods:
+  loadAfterSave:
+    terms:
+      # Saved choices come back unchanged, silent included.
+      - params:
+          - config:
+              sessionFinishedSoundId: ding
+              waitingSoundId: none
+        result:
+          sessionFinishedSoundId: ding
+          waitingSoundId: none
+      # The device default notification sound is a valid choice too.
+      - params:
+          - config:
+              sessionFinishedSoundId: system-default
+              waitingSoundId: fanfare
+        result:
+          sessionFinishedSoundId: system-default
+          waitingSoundId: fanfare
+  loadWhenStorageEmpty:
+    terms:
+      # A fresh install uses the desktop defaults.
+      - params: []
+        result:
+          sessionFinishedSoundId: success
+          waitingSoundId: chime
+  loadWhenStorageContainsRawValue:
+    terms:
+      # Unparsable JSON falls back to the defaults.
+      - params:
+          - rawValue: '{not json'
+        result:
+          sessionFinishedSoundId: success
+          waitingSoundId: chime
+      # A JSON value that is not an object falls back to the defaults.
+      - params:
+          - rawValue: '"ding"'
+        result:
+          sessionFinishedSoundId: success
+          waitingSoundId: chime
+      # An unknown sound id resets only that choice.
+      - params:
+          - rawValue: '{"sessionFinishedSoundId":"ping","waitingSoundId":"siren"}'
+        result:
+          sessionFinishedSoundId: ping
+          waitingSoundId: chime

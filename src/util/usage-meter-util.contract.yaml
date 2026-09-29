@@ -1,0 +1,61 @@
+# Contract for usageMeterUtil.
+# The dashboard splits each provider's windows into two panes: the session
+# pane (the 5-hour window) shown first, and the quota pane (MCP quota,
+# Weekly) reached through the pane toggle. isQuotaWindow answers which pane a
+# window belongs to by label. resolveResetBarPercent answers the reset bar's
+# fill percent: the share of the window still remaining, clamped to 0-100,
+# and zero when no resetAt exists so an inactive reset renders an empty bar.
+# All resolveResetBarPercent terms use windowMs 1000000 so the remaining
+# percents stay exact: resetAt 500000 at nowMs 0 means 50% remains, a resetAt
+# in the past means 0%, and a resetAt further out than the window clamps to
+# 100%.
+subject: usageMeterUtil
+module: ./usage-meter-util.js
+subjectType: function
+methods:
+  isQuotaWindow:
+    terms:
+      # The z.ai MCP quota window belongs to the quota pane.
+      - params:
+          - label: MCP quota
+        result: true
+      # The weekly window belongs to the quota pane.
+      - params:
+          - label: Weekly
+        result: true
+      # The rolling session window stays in the session pane.
+      - params:
+          - label: 5-hour window
+        result: false
+  resolveResetBarPercent:
+    terms:
+      # No resetAt means no active window, so the reset bar stays empty.
+      - params:
+          - nowMs: 0
+            resetAt: !undefined
+            windowMs: 1000000
+        result: 0
+      # Half the window remaining fills half the reset bar.
+      - params:
+          - nowMs: 0
+            resetAt: 500000
+            windowMs: 1000000
+        result: 50
+      # A quarter elapsed leaves three quarters of the reset bar.
+      - params:
+          - nowMs: 250000
+            resetAt: 1000000
+            windowMs: 1000000
+        result: 75
+      # A reset already past drains the reset bar to zero.
+      - params:
+          - nowMs: 2000000
+            resetAt: 1000000
+            windowMs: 1000000
+        result: 0
+      # A reset further out than the window clamps to a full bar.
+      - params:
+          - nowMs: 0
+            resetAt: 2000000
+            windowMs: 1000000
+        result: 100

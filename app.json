@@ -1,0 +1,66 @@
+{
+  "expo": {
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#010100",
+        "foregroundImage": "./assets/images/adaptive-icon.png"
+      },
+      "package": "com.usagepulse.mobile",
+      "predictiveBackGestureEnabled": false,
+      "versionCode": 10000
+    },
+    "experiments": {
+      "reactCompiler": true,
+      "typedRoutes": true
+    },
+    "icon": "./assets/images/icon.png",
+    "ios": {
+      "buildNumber": "0.1.0",
+      "bundleIdentifier": "com.usagepulse.mobile"
+    },
+    "name": "Usage Pulse Mobile",
+    "orientation": "portrait",
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "sounds": [
+            "./assets/sounds/beep.wav",
+            "./assets/sounds/chime.wav",
+            "./assets/sounds/ding.wav",
+            "./assets/sounds/fanfare.wav",
+            "./assets/sounds/ping.wav",
+            "./assets/sounds/success.wav"
+          ]
+        }
+      ],
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#010100",
+          "image": "./assets/images/splash.png",
+          "imageWidth": 449
+        }
+      ],
+      "./plugin/with-background-connection-service.ts",
+      "expo-audio"
+    ],
+    "scheme": "usage-pulse-mobile",
+    "slug": "usage-pulse-mobile",
+    "userInterfaceStyle": "automatic",
+    "version": "0.1.0",
+    "web": {
+      "favicon": "./assets/images/favicon.png",
+      "output": "static"
+    }
+  }
+}

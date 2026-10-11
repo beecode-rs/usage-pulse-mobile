@@ -91,10 +91,17 @@ const createStyles = (params: { theme: ThemePalette }) => {
   const { theme } = params
   return StyleSheet.create({
     banner: {
-      backgroundColor: theme.subtleTint,
-      borderRadius: 8,
-      gap: 6,
-      padding: 10,
+      backgroundColor: theme.card,
+      borderColor: theme.hairline,
+      borderTopLeftRadius: 8,
+      borderTopRightRadius: 8,
+      borderWidth: 1,
+      height: 24,
+      justifyContent: 'center',
+      marginBottom: -1,
+      marginHorizontal: 14,
+      paddingHorizontal: 12,
+      zIndex: 1,
     },
     bannerActive: {
       backgroundColor: theme.warningTint,
@@ -119,11 +126,14 @@ const createStyles = (params: { theme: ThemePalette }) => {
     },
     progressTrack: {
       backgroundColor: theme.warningTrack,
-      borderRadius: 1,
+      bottom: 0,
       flexDirection: 'row',
       height: 2,
       justifyContent: 'flex-end',
+      left: 10,
       overflow: 'hidden',
+      position: 'absolute',
+      right: 10,
     },
   })
 }

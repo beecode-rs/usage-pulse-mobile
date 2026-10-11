@@ -159,31 +159,35 @@ export const UsageTrackerCard = (props: { providerSnapshot: ProviderSnapshot }):
   }
 
   return (
-    <View style={[styles.card, isPeakHour && styles.cardPeakActive, isSnapshotStale && styles.cardStale]}>
-      <View style={styles.cardHeader}>
-        <View style={styles.cardHeading}>
-          <ProviderIcon providerId={providerSnapshot.providerId} />
-          <Text numberOfLines={1} style={styles.title}>
-            {providerSnapshot.trackerName}
-          </Text>
-        </View>
-        <View style={styles.cardActions}>
-          {hasBothPanes && (
-            <UsageWindowToggle
-              isQuotaSelected={isQuotaSelected}
-              onQuotaSelectedChange={setIsQuotaSelected}
-              quotaOptionLabel={quotaWindows[0].label}
-              sessionOptionLabel={constant.usageMeter.sessionPaneLabelText}
-            />
-          )}
-          {isSnapshotStale && <UsageStalePill fetchedAt={providerSnapshot.fetchedAt} />}
-          <Text style={[styles.statusText, { color: resolveStatusColor({ status: providerSnapshot.status, theme }) }]}>
-            {resolveStatusText(providerSnapshot.status)}
-          </Text>
-        </View>
-      </View>
+    <View style={styles.cardWrap}>
       <ZaiPeakBanner nowMs={now} providerId={providerSnapshot.providerId} />
-      {renderBody()}
+      <View style={[styles.card, isPeakHour && styles.cardPeakActive, isSnapshotStale && styles.cardStale]}>
+        <View style={styles.cardHeader}>
+          <View style={styles.cardHeading}>
+            <ProviderIcon providerId={providerSnapshot.providerId} />
+            <Text numberOfLines={1} style={styles.title}>
+              {providerSnapshot.trackerName}
+            </Text>
+          </View>
+          <View style={styles.cardActions}>
+            {hasBothPanes && (
+              <UsageWindowToggle
+                isQuotaSelected={isQuotaSelected}
+                onQuotaSelectedChange={setIsQuotaSelected}
+                quotaOptionLabel={quotaWindows[0].label}
+                sessionOptionLabel={constant.usageMeter.sessionPaneLabelText}
+              />
+            )}
+            {isSnapshotStale && <UsageStalePill fetchedAt={providerSnapshot.fetchedAt} />}
+            <Text
+              style={[styles.statusText, { color: resolveStatusColor({ status: providerSnapshot.status, theme }) }]}
+            >
+              {resolveStatusText(providerSnapshot.status)}
+            </Text>
+          </View>
+        </View>
+        {renderBody()}
+      </View>
     </View>
   )
 }
@@ -221,6 +225,7 @@ const createStyles = (params: { theme: ThemePalette }) => {
     cardStale: {
       borderColor: theme.warning,
     },
+    cardWrap: {},
     message: {
       fontSize: 13,
     },

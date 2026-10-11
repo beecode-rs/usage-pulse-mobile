@@ -7,6 +7,11 @@
 # leave the state unchanged because they exist for notification listeners.
 # dispatchMessage applies the reducer to the store and forwards only the three
 # notification worthy message types to registered listeners.
+# The tracker commands (refreshTracker, setTrackerPaused) load the saved
+# connection config, send the command through the api client, and apply the
+# returned state the same way; without a config or on a failed command they
+# are no-ops. The api client and the connection config service are module
+# mocks in the harness.
 subject: stateSyncContractHarness
 module: ./__tests__/_state-sync-service-contract-harness.js
 subjectType: function
@@ -25,6 +30,43 @@ methods:
             - usage-warning
           lastHeartbeatAt: 222
           sessions: null
+          usage: null
+  refreshTrackerWhenDispatched:
+    terms:
+      # With a saved connection config, a tracker refresh sends the command
+      # through the api client and applies the returned state to the store.
+      - params:
+          - trackerId: tracker-zai
+        result:
+          refreshTrackerParams:
+            - trackerId: tracker-zai
+          usage:
+            providers:
+              - isAutoRefreshPaused: true
+                providerId: zai
+                status: OK
+                trackerId: tracker-zai
+                trackerName: z.ai
+                usage:
+                  - label: Weekly
+                    usedPercent: 64
+  refreshTrackerWhenFailed:
+    terms:
+      # A failed command result leaves the store untouched.
+      - params:
+          - trackerId: tracker-zai
+        result:
+          refreshTrackerParams:
+            - trackerId: tracker-zai
+          usage: null
+  refreshTrackerWhenNoConfig:
+    terms:
+      # Without a saved config the command never reaches the api client and
+      # the store stays untouched.
+      - params:
+          - trackerId: tracker-zai
+        result:
+          refreshTrackerParams: []
           usage: null
   resolveNextState:
     terms:
@@ -291,3 +333,24 @@ methods:
             unreachableHosts: []
           usage:
             providers: []
+  setTrackerPausedWhenDispatched:
+    terms:
+      # Pausing or resuming a tracker sends the flag with the trackerId
+      # through the api client and applies the returned state to the store.
+      - params:
+          - isAutoRefreshPaused: true
+            trackerId: tracker-zai
+        result:
+          setTrackerPausedParams:
+            - isAutoRefreshPaused: true
+              trackerId: tracker-zai
+          usage:
+            providers:
+              - isAutoRefreshPaused: true
+                providerId: zai
+                status: OK
+                trackerId: tracker-zai
+                trackerName: z.ai
+                usage:
+                  - label: Weekly
+                    usedPercent: 64

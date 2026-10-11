@@ -5,11 +5,13 @@ import { UsageActivityStatus } from '@/business/enum/usage-activity-status-enum'
 import { useTheme } from '@/business/hook/use-theme'
 import { type ProviderSnapshot, type UsageWindow } from '@/business/model/usage-model'
 import { type ThemePalette } from '@/business/model/theme-model'
+import { stateSyncServiceSingleton } from '@/business/service/state-sync-service'
 import { UsageStalenessUtil } from '@/business/util/usage-staleness-util'
 import { ZaiPeakUtil } from '@/business/util/zai-peak-util'
 import { constant } from '@/util/constant'
 import { usageMeterUtil } from '@/util/usage-meter-util'
 import { UsageStalePill } from '@/ui-component/dashboard/usage-stale-pill'
+import { UsageTrackerMenu } from '@/ui-component/dashboard/usage-tracker-menu'
 import { UsageWindowMeter } from '@/ui-component/dashboard/usage-window-meter'
 import { UsageWindowToggle } from '@/ui-component/dashboard/usage-window-toggle'
 import { ZaiPeakBanner } from '@/ui-component/dashboard/zai-peak-banner'
@@ -17,8 +19,17 @@ import { ProviderIcon } from '@/ui-component/provider/provider-icon'
 
 const TICK_INTERVAL_MS = 30_000
 
-const resolveStatusColor = (params: { status: UsageActivityStatus; theme: ThemePalette }): string => {
-  const { status, theme } = params
+const resolveStatusColor = (params: {
+  isAutoRefreshPaused: boolean
+  status: UsageActivityStatus
+  theme: ThemePalette
+}): string => {
+  const { isAutoRefreshPaused, status, theme } = params
+
+  if (isAutoRefreshPaused && status === UsageActivityStatus.OK) {
+    return theme.muted
+  }
+
   switch (status) {
     case UsageActivityStatus.ERROR: {
       return theme.critical
@@ -42,6 +53,10 @@ const resolveStatusMessage = (params: { providerSnapshot: ProviderSnapshot }): s
       return providerSnapshot.errorMessage ?? 'Error'
     }
     case UsageActivityStatus.PENDING: {
+      if (providerSnapshot.isAutoRefreshPaused) {
+        return 'Auto-refresh is paused. Refresh to load usage.'
+      }
+
       return 'Loading usage…'
     }
     case UsageActivityStatus.UNCONFIGURED: {
@@ -53,7 +68,13 @@ const resolveStatusMessage = (params: { providerSnapshot: ProviderSnapshot }): s
   }
 }
 
-const resolveStatusText = (status: UsageActivityStatus): string => {
+const resolveStatusText = (params: { isAutoRefreshPaused: boolean; status: UsageActivityStatus }): string => {
+  const { isAutoRefreshPaused, status } = params
+
+  if (isAutoRefreshPaused && status === UsageActivityStatus.OK) {
+    return 'Paused'
+  }
+
   switch (status) {
     case UsageActivityStatus.ERROR: {
       return 'Error'
@@ -128,12 +149,15 @@ export const UsageTrackerCard = (props: { providerSnapshot: ProviderSnapshot }):
   }, [])
 
   const peakInfo = new ZaiPeakUtil().resolvePeakInfo({ nowMs: now, providerId: providerSnapshot.providerId })
+  const isAutoRefreshPaused = providerSnapshot.isAutoRefreshPaused ?? false
   const isPeakHour = peakInfo?.isPeakHour ?? false
-  const isSnapshotStale = new UsageStalenessUtil().isSnapshotStale({
-    nowMs: now,
-    providerSnapshot,
-    refreshIntervalMs: providerSnapshot.refreshIntervalMs,
-  })
+  const isSnapshotStale =
+    !isAutoRefreshPaused &&
+    new UsageStalenessUtil().isSnapshotStale({
+      nowMs: now,
+      providerSnapshot,
+      refreshIntervalMs: providerSnapshot.refreshIntervalMs,
+    })
 
   const usageWindows = providerSnapshot.usage ?? []
   const hasUsageWindows = providerSnapshot.status === UsageActivityStatus.OK && usageWindows.length > 0
@@ -144,6 +168,17 @@ export const UsageTrackerCard = (props: { providerSnapshot: ProviderSnapshot }):
 
   const renderWindowMeter = (usageWindow: UsageWindow): ReactElement => {
     return <UsageWindowMeter key={usageWindow.label} nowMs={now} usageWindow={usageWindow} />
+  }
+
+  const handleRefreshPress = (): void => {
+    void stateSyncServiceSingleton().refreshTracker({ trackerId: providerSnapshot.trackerId })
+  }
+
+  const handlePauseResumePress = (): void => {
+    void stateSyncServiceSingleton().setTrackerPaused({
+      isAutoRefreshPaused: !isAutoRefreshPaused,
+      trackerId: providerSnapshot.trackerId,
+    })
   }
 
   const renderBody = (): ReactElement => {
@@ -180,10 +215,24 @@ export const UsageTrackerCard = (props: { providerSnapshot: ProviderSnapshot }):
             )}
             {isSnapshotStale && <UsageStalePill fetchedAt={providerSnapshot.fetchedAt} />}
             <Text
-              style={[styles.statusText, { color: resolveStatusColor({ status: providerSnapshot.status, theme }) }]}
+              style={[
+                styles.statusText,
+                {
+                  color: resolveStatusColor({
+                    isAutoRefreshPaused,
+                    status: providerSnapshot.status,
+                    theme,
+                  }),
+                },
+              ]}
             >
-              {resolveStatusText(providerSnapshot.status)}
+              {resolveStatusText({ isAutoRefreshPaused, status: providerSnapshot.status })}
             </Text>
+            <UsageTrackerMenu
+              isPaused={isAutoRefreshPaused}
+              onPauseResumePress={handlePauseResumePress}
+              onRefreshPress={handleRefreshPress}
+            />
           </View>
         </View>
         {renderBody()}

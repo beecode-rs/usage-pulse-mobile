@@ -54,6 +54,37 @@ export const apiClientServiceContractHarness = {
     return await new ApiClientService().fetchHealth({ config })
   },
 
+  refreshTrackerRequestWhenOk: async (params: { config: ConnectionConfig; trackerId: string }) => {
+    const { config, trackerId } = params
+    fetchMock.mockImplementation(() => {
+      return Promise.resolve(
+        new Response(JSON.stringify({ sessions: null, usage: { providers: [] } }), { status: 200 }),
+      )
+    })
+
+    const result = await new ApiClientService().refreshTracker({ config, trackerId })
+    const firstCall = fetchMock.mock.calls[0]
+    const headers = firstCall?.[1]?.headers as Record<string, string> | undefined
+
+    return {
+      body: firstCall?.[1]?.body,
+      hasAuthorizationHeader: headers?.Authorization === `Bearer ${config.token}`,
+      hasJsonContentType: headers?.['content-type'] === 'application/json',
+      method: firstCall?.[1]?.method,
+      result,
+      url: firstCall?.[0],
+    }
+  },
+
+  refreshTrackerWhenInvalidResponse: async (params: { config: ConnectionConfig; trackerId: string }) => {
+    const { config, trackerId } = params
+    fetchMock.mockImplementation(() => {
+      return Promise.resolve(new Response(JSON.stringify({ ok: true }), { status: 200 }))
+    })
+
+    return await new ApiClientService().refreshTracker({ config, trackerId })
+  },
+
   fetchWhenTimedOut: async (params: { config: ConnectionConfig }) => {
     const { config } = params
     vi.useFakeTimers()
@@ -85,5 +116,33 @@ export const apiClientServiceContractHarness = {
     const { host, port, token } = params
 
     return new ApiClientService().resolveWsUrl({ host, port, token })
+  },
+
+  setTrackerPausedWhenOk: async (params: {
+    config: ConnectionConfig
+    isAutoRefreshPaused: boolean
+    trackerId: string
+  }) => {
+    const { config, isAutoRefreshPaused, trackerId } = params
+    fetchMock.mockImplementation(() => {
+      return Promise.resolve(
+        new Response(JSON.stringify({ sessions: null, usage: { providers: [] } }), { status: 200 }),
+      )
+    })
+
+    return await new ApiClientService().setTrackerPaused({ config, isAutoRefreshPaused, trackerId })
+  },
+
+  setTrackerPausedWhenUnauthorized: async (params: {
+    config: ConnectionConfig
+    isAutoRefreshPaused: boolean
+    trackerId: string
+  }) => {
+    const { config, isAutoRefreshPaused, trackerId } = params
+    fetchMock.mockImplementation(() => {
+      return Promise.resolve(new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 }))
+    })
+
+    return await new ApiClientService().setTrackerPaused({ config, isAutoRefreshPaused, trackerId })
   },
 }

@@ -115,3 +115,70 @@ methods:
         result:
           error: timeout
           success: false
+  refreshTrackerRequestWhenOk:
+    terms:
+      # A tracker refresh posts the trackerId as a json body with the bearer
+      # token to the tracker refresh command route and parses the state
+      # response the desktop answers with.
+      - params:
+          - config:
+              host: 192.168.1.10
+              port: 8787
+              token: pairing-token
+            trackerId: tracker-zai
+        result:
+          body: '{"trackerId":"tracker-zai"}'
+          hasAuthorizationHeader: true
+          hasJsonContentType: true
+          method: POST
+          result:
+            data:
+              sessions: null
+              usage:
+                providers: []
+            success: true
+          url: 'http://192.168.1.10:8787/api/tracker/refresh'
+  refreshTrackerWhenInvalidResponse:
+    terms:
+      # A command answered with a body the state schema rejects (an older
+      # desktop without the command routes answers 404 not-found) maps to
+      # invalid-response.
+      - params:
+          - config:
+              host: 192.168.1.10
+              port: 8787
+              token: pairing-token
+            trackerId: tracker-zai
+        result:
+          error: invalid-response
+          success: false
+  setTrackerPausedWhenOk:
+    terms:
+      # Pausing or resuming a tracker posts the flag with the trackerId and
+      # parses the state response.
+      - params:
+          - config:
+              host: 192.168.1.10
+              port: 8787
+              token: pairing-token
+            isAutoRefreshPaused: true
+            trackerId: tracker-zai
+        result:
+          data:
+            sessions: null
+            usage:
+              providers: []
+          success: true
+  setTrackerPausedWhenUnauthorized:
+    terms:
+      # A command with a wrong token maps to unauthorized.
+      - params:
+          - config:
+              host: 192.168.1.10
+              port: 8787
+              token: wrong-token
+            isAutoRefreshPaused: false
+            trackerId: tracker-zai
+        result:
+          error: unauthorized
+          success: false

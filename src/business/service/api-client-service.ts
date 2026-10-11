@@ -11,13 +11,42 @@ export class ApiClientService {
   async fetchHealth(params: { config: ConnectionConfig }): Promise<ApiClientResult<MobileHealthResponse>> {
     const { config } = params
 
-    return this._fetchParsedByPath({ config, path: '/api/health', schema: mobileHealthResponseSchema })
+    return this._requestParsedByPath({ config, path: '/api/health', schema: mobileHealthResponseSchema })
   }
 
   async fetchState(params: { config: ConnectionConfig }): Promise<ApiClientResult<MobileStateResponse>> {
     const { config } = params
 
-    return this._fetchParsedByPath({ config, path: '/api/state', schema: mobileStateResponseSchema })
+    return this._requestParsedByPath({ config, path: '/api/state', schema: mobileStateResponseSchema })
+  }
+
+  async refreshTracker(params: {
+    config: ConnectionConfig
+    trackerId: string
+  }): Promise<ApiClientResult<MobileStateResponse>> {
+    const { config, trackerId } = params
+
+    return this._requestParsedByPath({
+      body: { trackerId },
+      config,
+      path: '/api/tracker/refresh',
+      schema: mobileStateResponseSchema,
+    })
+  }
+
+  async setTrackerPaused(params: {
+    config: ConnectionConfig
+    isAutoRefreshPaused: boolean
+    trackerId: string
+  }): Promise<ApiClientResult<MobileStateResponse>> {
+    const { config, isAutoRefreshPaused, trackerId } = params
+
+    return this._requestParsedByPath({
+      body: { isAutoRefreshPaused, trackerId },
+      config,
+      path: '/api/tracker/set-paused',
+      schema: mobileStateResponseSchema,
+    })
   }
 
   resolveApiBaseUrl(params: { host: string; port: number }): string {
@@ -34,12 +63,27 @@ export class ApiClientService {
     return `ws://${normalizedHost}:${port}/ws?token=${encodeURIComponent(token)}`
   }
 
-  protected async _fetchParsedByPath<T>(params: {
+  protected _resolveRequestInit(params: { body?: object; token: string }): RequestInit {
+    const { body, token } = params
+
+    if (body === undefined) {
+      return { headers: { Authorization: `Bearer ${token}` }, method: 'GET' }
+    }
+
+    return {
+      body: JSON.stringify(body),
+      headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      method: 'POST',
+    }
+  }
+
+  protected async _requestParsedByPath<T>(params: {
+    body?: object
     config: ConnectionConfig
     path: string
     schema: z.ZodType<T>
   }): Promise<ApiClientResult<T>> {
-    const { config, path, schema } = params
+    const { body, config, path, schema } = params
     const baseUrl = this.resolveApiBaseUrl({ host: config.host, port: config.port })
     const abortController = new AbortController()
     const abortTimeout = setTimeout(() => {
@@ -48,7 +92,7 @@ export class ApiClientService {
 
     try {
       const response = await fetch(`${baseUrl}${path}`, {
-        headers: { Authorization: `Bearer ${config.token}` },
+        ...this._resolveRequestInit({ body, token: config.token }),
         signal: abortController.signal,
       })
 

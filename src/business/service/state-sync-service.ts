@@ -1,8 +1,10 @@
+import { type ApiClientResult } from '@/business/model/api-client-model'
 import { type AppStateModel } from '@/business/model/app-state-model'
 import { type ConnectionConfig } from '@/business/model/connection-config-model'
 import {
   type MobileSessionFinishedMessage,
   type MobileSessionWaitingMessage,
+  type MobileStateResponse,
   type MobileUsageWarningMessage,
   type MobileWsMessage,
 } from '@/business/model/mobile-api-model'
@@ -44,6 +46,24 @@ export class StateSyncService {
     const { listener } = params
     this._notificationListeners = this._notificationListeners.filter((existing) => {
       return existing !== listener
+    })
+  }
+
+  async refreshTracker(params: { trackerId: string }): Promise<void> {
+    const { trackerId } = params
+    await this._sendCommandBySavedConfig({
+      sendCommand: (config) => {
+        return this._apiClient.refreshTracker({ config, trackerId })
+      },
+    })
+  }
+
+  async setTrackerPaused(params: { isAutoRefreshPaused: boolean; trackerId: string }): Promise<void> {
+    const { isAutoRefreshPaused, trackerId } = params
+    await this._sendCommandBySavedConfig({
+      sendCommand: (config) => {
+        return this._apiClient.setTrackerPaused({ config, isAutoRefreshPaused, trackerId })
+      },
     })
   }
 
@@ -121,13 +141,37 @@ export class StateSyncService {
 
   protected async _hydrateStateByConfig(params: { config: ConnectionConfig }): Promise<void> {
     const { config } = params
-    const stateResult = await this._apiClient.fetchState({ config })
+    this._dispatchStateResult({ stateResult: await this._apiClient.fetchState({ config }) })
+  }
+
+  protected _dispatchStateResult(params: { stateResult: ApiClientResult<MobileStateResponse> }): void {
+    const { stateResult } = params
+
     if (!stateResult.success) {
       return
     }
+
     this.dispatchMessage({
       message: { sessions: stateResult.data.sessions, type: 'state', usage: stateResult.data.usage },
     })
+  }
+
+  protected async _sendCommandBySavedConfig(params: {
+    sendCommand: (config: ConnectionConfig) => Promise<ApiClientResult<MobileStateResponse>>
+  }): Promise<void> {
+    const { sendCommand } = params
+
+    try {
+      const config = await connectionConfigService.loadConfig()
+
+      if (config === undefined) {
+        return
+      }
+
+      this._dispatchStateResult({ stateResult: await sendCommand(config) })
+    } catch {
+      return
+    }
   }
 
   protected _isNotificationWorthy(

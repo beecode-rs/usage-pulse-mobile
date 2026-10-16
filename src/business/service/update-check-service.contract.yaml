@@ -1,0 +1,145 @@
+# Contract for the GitHub release update check against
+# beecode-rs/usage-pulse-mobile. checkForNewVersion GETs the latest release
+# from the GitHub api with the github+json accept header, and answers the
+# AppUpdate for the chosen download target only when that version is newer
+# than the running one: the .apk asset's browser_download_url when the
+# release ships one, the release page html_url otherwise. Equal or older
+# releases answer undefined. Every failure rejects with a typed
+# AppUpdateError carrying an UpdateCheckErrorMapper kind: the rate-limit
+# headers (x-ratelimit-remaining 0 plus x-ratelimit-reset epoch seconds,
+# scaled to milliseconds) map to rate-limited, a 404 (repo without
+# releases) to http-error with the status, a rejected fetch to network,
+# the 10 s AbortController timeout to timeout, and a body the release
+# schema rejects to invalid-response with the first zod issue as reason.
+# resolveUpdateError is the shared mapper: it passes typed errors through
+# and buckets everything else by error name. The harness stubs the global
+# fetch per scenario (fake timers for the timeout) and mocks expo-constants
+# so resolveCurrentVersion is pinned.
+subject: updateCheckServiceContractHarness
+module: ./__tests__/_update-check-service-contract-harness.js
+subjectType: function
+methods:
+  checkForNewVersionWhenNewerReleaseWithApkAsset:
+    terms:
+      # A newer release with an apk asset answers the apk download url.
+      - params:
+          - currentVersion: '0.2.0'
+        result:
+          downloadUrl: 'https://github.com/beecode-rs/usage-pulse-mobile/releases/download/v0.3.0/UsagePulse-v0.3.0-android.apk'
+          version: '0.3.0'
+  checkForNewVersionWhenNewerReleaseWithoutApkAsset:
+    terms:
+      # Without an apk asset the release page url is the download target.
+      - params:
+          - currentVersion: '0.2.0'
+        result:
+          downloadUrl: 'https://github.com/beecode-rs/usage-pulse-mobile/releases/tag/v0.3.0'
+          version: '0.3.0'
+  checkForNewVersionWhenCurrentVersionMatches:
+    terms:
+      # The running version matching the latest release is not an update.
+      - params:
+          - currentVersion: '0.2.0'
+        result: !undefined
+  checkForNewVersionWhenOlderRelease:
+    terms:
+      # A latest release older than the running version is not an update.
+      - params:
+          - currentVersion: '0.2.0'
+        result: !undefined
+  checkForNewVersionRequest:
+    terms:
+      # The check GETs the configured latest release url with the github+json
+      # accept header.
+      - params:
+          - currentVersion: '0.1.0'
+        result:
+          headersAccept: application/vnd.github+json
+          result:
+            downloadUrl: 'https://github.com/beecode-rs/usage-pulse-mobile/releases/download/v0.3.0/UsagePulse-v0.3.0-android.apk'
+            version: '0.3.0'
+          url: 'https://api.github.com/repos/beecode-rs/usage-pulse-mobile/releases/latest'
+  checkForNewVersionWhenFetchRejects:
+    terms:
+      # A rejected fetch (offline, dns failure) maps to network with the
+      # underlying message.
+      - params:
+          - currentVersion: '0.2.0'
+        result:
+          kind: network
+          message: Network request failed
+  checkForNewVersionWhenRateLimited:
+    terms:
+      # The rate-limit headers (remaining 0, reset epoch seconds) map to
+      # rate-limited with the reset scaled to milliseconds.
+      - params:
+          - currentVersion: '0.2.0'
+        result:
+          kind: rate-limited
+          resetAt: 1790000000000
+  checkForNewVersionWhenStatusNotOk:
+    terms:
+      # A non-2xx status (a repo without releases answers 404) maps to
+      # http-error carrying the status; the body is not parsed.
+      - params:
+          - currentVersion: '0.2.0'
+        result:
+          kind: http-error
+          status: 404
+  checkForNewVersionWhenTimedOut:
+    terms:
+      # The fetch hanging past the timeout aborts and maps to timeout.
+      - params:
+          - currentVersion: '0.2.0'
+        result:
+          kind: timeout
+          message: The operation was aborted.
+  checkForNewVersionWhenInvalidResponse:
+    terms:
+      # A 200 body the release schema rejects maps to invalid-response with
+      # the first zod issue as the reason.
+      - params:
+          - currentVersion: '0.2.0'
+        result:
+          kind: invalid-response
+          reason: 'assets: Invalid input: expected array, received undefined'
+  resolveCurrentVersion:
+    terms:
+      # The running version comes from the expo config.
+      - params: []
+        result: '0.2.0'
+  resolveUpdateError:
+    terms:
+      # A rejected fetch (TypeError) maps to network.
+      - params:
+          - error: "new Error('Network request failed', { name: 'TypeError' })"
+        result:
+          kind: network
+          message: Network request failed
+      # The abort signal maps to timeout.
+      - params:
+          - error: "new Error('The operation was aborted.', { name: 'AbortError' })"
+        result:
+          kind: timeout
+          message: The operation was aborted.
+      # Invalid json bodies (SyntaxError from response.json()) map to
+      # invalid-response with the parse message as reason.
+      - params:
+          - error: "new Error('Unexpected end of JSON input', { name: 'SyntaxError' })"
+        result:
+          kind: invalid-response
+          reason: Unexpected end of JSON input
+      # Any other error maps to unknown with its message.
+      - params:
+          - error: "new Error('boom')"
+        result:
+          kind: unknown
+          message: boom
+      # A typed update error passes through untouched.
+      - params:
+          - error:
+              kind: http-error
+              status: 500
+        result:
+          kind: http-error
+          status: 500

@@ -1,0 +1,7 @@
+export enum UpdateCheckStatus {
+  CHECKING = 'CHECKING',
+  ERROR = 'ERROR',
+  IDLE = 'IDLE',
+  UP_TO_DATE = 'UP_TO_DATE',
+  UPDATE_AVAILABLE = 'UPDATE_AVAILABLE',
+}

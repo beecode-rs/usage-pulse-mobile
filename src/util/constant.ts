@@ -82,6 +82,14 @@ export const constant = {
     defaultMode: ThemeModeMapper.AUTO,
     storageKey: 'usage-pulse-mobile.theme-mode',
   },
+  updateCheck: {
+    apkAssetNameRegex: /\.apk$/,
+    latestReleaseUrl: 'https://api.github.com/repos/beecode-rs/usage-pulse-mobile/releases/latest',
+    rateLimitRemainingHeader: 'x-ratelimit-remaining',
+    rateLimitResetHeader: 'x-ratelimit-reset',
+    timeoutMs: 10_000,
+    versionTagPrefixRegex: /^v/,
+  },
   usageMeter: {
     fiveHourWindowMs: 5 * 60 * 60 * 1000,
     paceOnPaceBandPercent: 5,

@@ -1,0 +1,51 @@
+# Contract for versionCompareUtil. isNewer compares dot separated numeric
+# version parts pairwise from the left: the candidate is newer only when the
+# first differing part is greater. Missing parts count as zero, equal versions
+# are not newer, and a part that fails to parse as a number never counts as
+# newer.
+subject: versionCompareUtil
+module: ./version-compare-util.js
+subjectType: function
+methods:
+  isNewer:
+    terms:
+      # A newer patch version is newer.
+      - params:
+          - candidate: '0.2.1'
+            current: '0.2.0'
+        result: true
+      # A newer minor version beats any patch number.
+      - params:
+          - candidate: '0.3.0'
+            current: '0.2.9'
+        result: true
+      # A newer major version beats any minor and patch numbers.
+      - params:
+          - candidate: '1.0.0'
+            current: '0.9.9'
+        result: true
+      # The same version is not newer.
+      - params:
+          - candidate: '0.2.0'
+            current: '0.2.0'
+        result: false
+      # An older version is not newer.
+      - params:
+          - candidate: '0.1.9'
+            current: '0.2.0'
+        result: false
+      # Missing parts count as zero, so 1.2 equals 1.2.0.
+      - params:
+          - candidate: '1.2'
+            current: '1.2.0'
+        result: false
+      # Missing parts count as zero, so 1.2.1 beats 1.2.
+      - params:
+          - candidate: '1.2.1'
+            current: '1.2'
+        result: true
+      # A part that does not parse as a number never counts as newer.
+      - params:
+          - candidate: beta
+            current: '0.2.0'
+        result: false

@@ -6,6 +6,7 @@ import { useColorScheme } from 'react-native'
 import { useNotificationSoundBootstrap } from '@/business/hook/use-notification-sound-bootstrap'
 import { useThemeBootstrap } from '@/business/hook/use-theme-bootstrap'
 import { useThemeMode } from '@/business/hook/use-theme-mode'
+import { useUpdateCheckBootstrap } from '@/business/hook/use-update-check-bootstrap'
 import { type ThemeScheme } from '@/business/model/theme-model'
 import { NotificationService } from '@/business/service/notification-service'
 import { type StateSyncNotificationListener, stateSyncServiceSingleton } from '@/business/service/state-sync-service'
@@ -25,6 +26,7 @@ const resolveStatusBarStyle = (params: { scheme: ThemeScheme }): 'light' | 'dark
 export default function AppLayout() {
   useThemeBootstrap()
   useNotificationSoundBootstrap()
+  useUpdateCheckBootstrap()
   const { mode } = useThemeMode()
   const systemScheme = useColorScheme()
   const scheme = themeUtil.resolveScheme({ mode, systemScheme })

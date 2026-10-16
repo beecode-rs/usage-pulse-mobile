@@ -5,6 +5,7 @@ import { useTheme } from '@/business/hook/use-theme'
 import { type ThemePalette } from '@/business/model/theme-model'
 import { NotificationSoundSettings } from '@/ui-component/settings/notification-sound-settings'
 import { ThemeModeSelector } from '@/ui-component/settings/theme-mode-selector'
+import { UpdateCheckSettings } from '@/ui-component/settings/update-check-settings'
 
 export const SystemSettingsTab = (): ReactElement => {
   const theme = useTheme()
@@ -18,6 +19,9 @@ export const SystemSettingsTab = (): ReactElement => {
       <Text style={[styles.sectionTitle, styles.sectionSpacing]}>Notification sounds</Text>
       <NotificationSoundSettings />
       <Text style={styles.hintText}>Played when a desktop session finishes or needs your input.</Text>
+      <Text style={[styles.sectionTitle, styles.sectionSpacing]}>App update</Text>
+      <UpdateCheckSettings />
+      <Text style={styles.hintText}>Checks GitHub for a newer release. Downloading opens your browser.</Text>
     </View>
   )
 }

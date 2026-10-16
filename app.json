@@ -7,7 +7,7 @@
       },
       "package": "com.usagepulse.mobile",
       "predictiveBackGestureEnabled": false,
-      "versionCode": 10002
+      "versionCode": 10003
     },
     "experiments": {
       "reactCompiler": true,
@@ -15,7 +15,7 @@
     },
     "icon": "./assets/images/icon.png",
     "ios": {
-      "buildNumber": "0.2.0",
+      "buildNumber": "0.3.0",
       "bundleIdentifier": "com.usagepulse.mobile"
     },
     "name": "Usage Pulse Mobile",
@@ -57,7 +57,7 @@
     "scheme": "usage-pulse-mobile",
     "slug": "usage-pulse-mobile",
     "userInterfaceStyle": "automatic",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "web": {
       "favicon": "./assets/images/favicon.png",
       "output": "static"

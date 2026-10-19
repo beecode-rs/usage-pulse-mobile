@@ -11,5 +11,5 @@
 | `pnpm android-rebuild`                                   | clean prebuild + release-variant install on Android             |
 | `pnpm android-release`                                   | release-variant install on Android, without the clean prebuild  |
 | `pnpm ios-rebuild`                                       | clean prebuild + release-variant install on iOS (best effort)   |
-| `pnpm release:patch` / `release:minor` / `release:major` | bump, tag, and push a release (see [Releasing](./releasing.md)) |
+| `pnpm release-patch` / `release-minor` / `release-major` | bump, tag, and push a release (see [Releasing](./releasing.md)) |
 | `pnpm exec expo export --platform android`               | bundle verification                                             |

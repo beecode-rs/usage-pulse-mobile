@@ -49,8 +49,8 @@ const resolveMenuItems = (params: {
 }): ServerRowMenuItemView[] => {
   const { onClonePress, onDeletePress, onEditPress, theme } = params
   return [
-    { color: '#60a5fa', icon: <EditIcon color="#60a5fa" />, label: 'Edit', onPress: onEditPress },
-    { color: theme.good, icon: <CopyIcon color={theme.good} />, label: 'Clone', onPress: onClonePress },
+    { color: theme.text, icon: <EditIcon color="#60a5fa" />, label: 'Edit', onPress: onEditPress },
+    { color: theme.text, icon: <CopyIcon color="#a78bfa" />, label: 'Clone', onPress: onClonePress },
     { color: theme.critical, icon: <TrashIcon color={theme.critical} />, label: 'Delete', onPress: onDeletePress },
   ]
 }

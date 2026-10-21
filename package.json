@@ -5,7 +5,8 @@
   "main": "expo-router/entry",
   "scripts": {
     "android": "expo start --android --dev-client",
-    "android-rebuild": "APP_VARIANT=dev expo prebuild --platform android --clean && node scripts/patch-android-build.mjs && APP_VARIANT=dev expo run:android --variant release",
+    "android-install": "adb install -r android/app/build/outputs/apk/debug/app-debug.apk",
+    "android-rebuild": "APP_VARIANT=dev expo prebuild --platform android --clean && node scripts/patch-android-build.mjs",
     "android-release": "APP_VARIANT=dev expo run:android --variant release",
     "ios": "expo start --ios --dev-client",
     "ios-rebuild": "APP_VARIANT=dev expo prebuild --platform ios --clean && APP_VARIANT=dev expo run:ios",

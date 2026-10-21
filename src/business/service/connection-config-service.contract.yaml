@@ -1,13 +1,23 @@
 # Contract for the on-device connection config persistence: saveConfig
 # serializes the config to AsyncStorage under the single storage key and
 # loadConfig returns the same shape back, or undefined when nothing is
-# stored yet (the explicit not-configured representation). The harness
+# stored yet (the explicit not-configured representation). removeConfig
+# clears the key again, and is a no-op when nothing is stored. The harness
 # mocks AsyncStorage with an in-memory map cleared per scenario so terms
 # stay independent.
 subject: connectionConfigServiceContractHarness
 module: ./__tests__/_connection-config-service-contract-harness.js
 subjectType: function
 methods:
+  loadAfterRemove:
+    terms:
+      # Removing the saved config clears the key: the next load finds nothing.
+      - params:
+          - config:
+              host: 100.101.102.103
+              port: 8787
+              token: pairing-token
+        result: !undefined
   loadAfterSave:
     terms:
       - params:
@@ -30,5 +40,10 @@ methods:
           token: 'a b/c&d'
   loadWhenStorageEmpty:
     terms:
+      - params: []
+        result: !undefined
+  removeWhenStorageEmpty:
+    terms:
+      # Removing when nothing is stored resolves without error (no-op).
       - params: []
         result: !undefined

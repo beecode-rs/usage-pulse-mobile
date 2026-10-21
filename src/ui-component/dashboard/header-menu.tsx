@@ -10,6 +10,7 @@ import { MoreIcon } from '@/ui-component/icon/more-icon'
 import { PlugIcon } from '@/ui-component/icon/plug-icon'
 import { PowerIcon } from '@/ui-component/icon/power-icon'
 import { RetryIcon } from '@/ui-component/icon/retry-icon'
+import { ServerIcon } from '@/ui-component/icon/server-icon'
 
 type HeaderMenuProps = {
   dropdownTopOffset: number
@@ -18,6 +19,7 @@ type HeaderMenuProps = {
   onConnectPress: () => void
   onDisconnectPress: () => void
   onRetryConnectPress: () => void
+  onServersPress: () => void
   onSettingsPress: () => void
 }
 
@@ -60,6 +62,7 @@ export const HeaderMenu = (props: HeaderMenuProps): ReactElement => {
     onConnectPress,
     onDisconnectPress,
     onRetryConnectPress,
+    onServersPress,
     onSettingsPress,
   } = props
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -112,6 +115,13 @@ export const HeaderMenu = (props: HeaderMenuProps): ReactElement => {
                 }}
               />
             )}
+            <HeaderMenuItem
+              icon={<ServerIcon color={theme.muted} />}
+              label="Servers"
+              onPress={() => {
+                return handleMenuSelect({ onPress: onServersPress })
+              }}
+            />
             <HeaderMenuItem
               icon={<GearIcon color={theme.muted} />}
               label="Settings"

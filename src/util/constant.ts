@@ -1,6 +1,5 @@
 import { ProviderIdMapper } from '@/business/enum/provider-id-mapper-enum'
 import { SoundNameMapper } from '@/business/enum/sound-name-mapper-enum'
-import { SettingsTabMapper } from '@/business/enum/settings-tab-mapper-enum'
 import { ThemeModeMapper } from '@/business/enum/theme-mode-mapper-enum'
 
 export const constant = {
@@ -68,15 +67,12 @@ export const constant = {
     storageKey: 'usage-pulse-mobile.notification-sound-config',
     systemDefaultAndroidUri: 'content://settings/system/notification_sound',
   },
+  serverList: {
+    storageKey: 'usage-pulse-mobile.server-list',
+  },
   sessionPulse: {
     finishedDefaultMs: 30_000,
     waveDurationMs: 1_200,
-  },
-  settings: {
-    tabCatalog: [
-      { id: SettingsTabMapper.CONNECTION, label: 'Connection' },
-      { id: SettingsTabMapper.SYSTEM, label: 'System' },
-    ],
   },
   themeConfig: {
     defaultMode: ThemeModeMapper.AUTO,

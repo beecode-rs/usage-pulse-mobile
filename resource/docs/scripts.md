@@ -8,7 +8,8 @@
 | `pnpm lint-fix`                                          | same, in write mode                                             |
 | `pnpm start`                                             | start the Expo dev server                                       |
 | `pnpm android` / `pnpm ios` / `pnpm web`                 | start the dev server for one platform                           |
-| `pnpm android-rebuild`                                   | clean prebuild + release-variant install on Android             |
+| `pnpm android-install`                                   | reinstall the last built debug APK on a connected device        |
+| `pnpm android-rebuild`                                   | clean prebuild + patch, regenerating the android project        |
 | `pnpm android-release`                                   | release-variant install on Android, without the clean prebuild  |
 | `pnpm ios-rebuild`                                       | clean prebuild + release-variant install on iOS (best effort)   |
 | `pnpm release-patch` / `release-minor` / `release-major` | bump, tag, and push a release (see [Releasing](./releasing.md)) |

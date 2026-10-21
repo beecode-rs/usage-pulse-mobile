@@ -1,44 +1,20 @@
-import { type ReactElement, useState } from 'react'
+import { type ReactElement } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { SettingsTabMapper } from '@/business/enum/settings-tab-mapper-enum'
 import { useTheme } from '@/business/hook/use-theme'
 import { type ThemePalette } from '@/business/model/theme-model'
-import { ConnectionSettingsTab } from '@/ui-component/settings/connection-settings-tab'
-import { SettingsTabBar } from '@/ui-component/settings/settings-tab-bar'
 import { SystemSettingsTab } from '@/ui-component/settings/system-settings-tab'
 
 type SettingsScreenProps = {
   onBackPress: () => void
 }
 
-const resolveTabContent = (params: { activeTab: SettingsTabMapper }): ReactElement => {
-  const { activeTab } = params
-  switch (activeTab) {
-    case SettingsTabMapper.CONNECTION: {
-      return <ConnectionSettingsTab />
-    }
-    case SettingsTabMapper.SYSTEM: {
-      return <SystemSettingsTab />
-    }
-    default: {
-      throw new Error('unsupported settings tab')
-    }
-  }
-}
-
 export const SettingsScreen = (props: SettingsScreenProps): ReactElement => {
   const { onBackPress } = props
-  const [activeTab, setActiveTab] = useState<SettingsTabMapper>(SettingsTabMapper.CONNECTION)
   const theme = useTheme()
   const insets = useSafeAreaInsets()
   const styles = createStyles({ theme })
-
-  const handleTabSelect = (params: { tab: SettingsTabMapper }): void => {
-    const { tab } = params
-    setActiveTab(tab)
-  }
 
   return (
     <View style={styles.screen}>
@@ -49,9 +25,8 @@ export const SettingsScreen = (props: SettingsScreenProps): ReactElement => {
         <Text style={styles.headerTitle}>Settings</Text>
         <View style={styles.headerSpacer} />
       </View>
-      <SettingsTabBar activeTab={activeTab} onTabSelect={handleTabSelect} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {resolveTabContent({ activeTab })}
+        <SystemSettingsTab />
       </ScrollView>
     </View>
   )

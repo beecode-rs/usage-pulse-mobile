@@ -13,6 +13,11 @@ vi.mock('@react-native-async-storage/async-storage', () => {
       getItem: (key: string) => {
         return Promise.resolve(storageContent.get(key) ?? null)
       },
+      removeItem: (key: string) => {
+        storageContent.delete(key)
+
+        return Promise.resolve()
+      },
       setItem: (key: string, value: string) => {
         storageContent.set(key, value)
 
@@ -23,6 +28,15 @@ vi.mock('@react-native-async-storage/async-storage', () => {
 })
 
 export const connectionConfigServiceContractHarness = {
+  loadAfterRemove: async (params: { config: ConnectionConfig }) => {
+    const { config } = params
+    storageContent.clear()
+    await connectionConfigService.saveConfig({ config })
+    await connectionConfigService.removeConfig()
+
+    return await connectionConfigService.loadConfig()
+  },
+
   loadAfterSave: async (params: { config: ConnectionConfig }) => {
     const { config } = params
     storageContent.clear()
@@ -35,5 +49,10 @@ export const connectionConfigServiceContractHarness = {
     storageContent.clear()
 
     return await connectionConfigService.loadConfig()
+  },
+
+  removeWhenStorageEmpty: async () => {
+    storageContent.clear()
+    await connectionConfigService.removeConfig()
   },
 }

@@ -1,0 +1,188 @@
+# Contract for the on-device server list persistence: savePayload serializes
+# the server list payload as JSON under the single storage key and loadPayload
+# parses it back, or returns undefined when nothing is stored, when the stored
+# value is unparsable, or when it is not a valid payload shape. A stored
+# payload from before entries had a name still loads: the schema materializes
+# the missing name as an empty string instead of discarding the list. When the
+# server list key is unset but the legacy single-server connection config
+# exists, the legacy config is migrated: it becomes the one seeded server
+# entry (with an empty name), is marked active, and the migrated payload is
+# persisted so later loads skip migration. A corrupt stored value does NOT
+# fall back to that migration: the legacy key is ignored, the corrupt key
+# stays in place, and the load resolves undefined. Entry ids are
+# timestamp+random, so terms assert id presence and uniqueness through the
+# harness, never an exact id. The harness mocks AsyncStorage with an
+# in-memory map cleared per scenario so terms stay independent.
+subject: serverListServiceContractHarness
+module: ./__tests__/_server-list-service-contract-harness.js
+subjectType: function
+methods:
+  createEntryFromConfig:
+    terms:
+      # The config fields and the chosen name land on the entry verbatim; only
+      # the id is generated.
+      - params:
+          - config:
+              host: desktop.local
+              port: 9000
+              token: 'a b/c&d'
+            name: Lab server
+        result:
+          host: desktop.local
+          idFirstPresent: true
+          idsDiffer: true
+          name: Lab server
+          port: 9000
+          token: 'a b/c&d'
+  loadAfterSave:
+    terms:
+      # The saved payload comes back unchanged, name and active server included.
+      - params:
+          - payload:
+              activeServerId: server-1
+              servers:
+                - host: 100.101.102.103
+                  id: server-1
+                  name: Lab server
+                  port: 8787
+                  token: pairing-token
+        result:
+          activeServerId: server-1
+          servers:
+            - host: 100.101.102.103
+              id: server-1
+              name: Lab server
+              port: 8787
+              token: pairing-token
+      # Several servers roundtrip in order, even with a non-first one active.
+      - params:
+          - payload:
+              activeServerId: server-2
+              servers:
+                - host: 100.101.102.103
+                  id: server-1
+                  name: Lab server
+                  port: 8787
+                  token: pairing-token
+                - host: desktop.local
+                  id: server-2
+                  name: Backup
+                  port: 9000
+                  token: other-token
+        result:
+          activeServerId: server-2
+          servers:
+            - host: 100.101.102.103
+              id: server-1
+              name: Lab server
+              port: 8787
+              token: pairing-token
+            - host: desktop.local
+              id: server-2
+              name: Backup
+              port: 9000
+              token: other-token
+  loadMigratesLegacyConfig:
+    terms:
+      # Legacy single-server config becomes one active server entry with an
+      # empty name, and the migrated payload is persisted: a second load
+      # succeeds after the legacy key is dropped from storage.
+      - params:
+          - config:
+              host: 100.101.102.103
+              port: 8787
+              token: pairing-token
+        result:
+          activeServerIdIsMigratedServerId: true
+          host: 100.101.102.103
+          idPresent: true
+          name: ''
+          port: 8787
+          persistedWithoutLegacyKey: true
+          serverCount: 1
+          token: pairing-token
+  loadWhenBothKeysStored:
+    terms:
+      # An existing server list wins: the legacy key is ignored, so no server
+      # is seeded a second time.
+      - params:
+          - legacyConfig:
+              host: legacy.local
+              port: 1111
+              token: legacy-token
+            payload:
+              activeServerId: server-2
+              servers:
+                - host: 100.101.102.103
+                  id: server-1
+                  name: Lab server
+                  port: 8787
+                  token: pairing-token
+                - host: desktop.local
+                  id: server-2
+                  name: Backup
+                  port: 9000
+                  token: other-token
+        result:
+          activeServerId: server-2
+          servers:
+            - host: 100.101.102.103
+              id: server-1
+              name: Lab server
+              port: 8787
+              token: pairing-token
+            - host: desktop.local
+              id: server-2
+              name: Backup
+              port: 9000
+              token: other-token
+  loadWhenStorageContainsRawValue:
+    terms:
+      # Unparsable JSON resolves to undefined instead of rejecting.
+      - params:
+          - rawValue: '{not json'
+        result: !undefined
+      # A JSON object without the required servers array is not a payload.
+      - params:
+          - rawValue: '{}'
+        result: !undefined
+      # A servers field that is not an array is not a payload either.
+      - params:
+          - rawValue: '{"servers":null}'
+        result: !undefined
+      # A bare JSON null reaches the loader as the string "null" and is not a payload.
+      - params:
+          - rawValue: 'null'
+        result: !undefined
+      # A payload written before entries had a name still loads: the missing
+      # name materializes as '' instead of the whole list being discarded.
+      - params:
+          - rawValue: >-
+              {"activeServerId":"server-1","servers":[{"host":"100.101.102.103","id":"server-1","port":8787,"token":"pairing-token"}]}
+        result:
+          activeServerId: server-1
+          servers:
+            - host: 100.101.102.103
+              id: server-1
+              name: ''
+              port: 8787
+              token: pairing-token
+  loadWhenStorageEmpty:
+    terms:
+      # Nothing stored anywhere means there is no server list yet.
+      - params: []
+        result: !undefined
+  loadWhenStorageInvalidAndLegacyConfigPresent:
+    terms:
+      # A corrupt stored value is not migrated away: the legacy config is
+      # ignored, the corrupt key stays in place, and the load resolves undefined.
+      - params:
+          - legacyConfig:
+              host: 100.101.102.103
+              port: 8787
+              token: pairing-token
+            rawValue: '{not json'
+        result:
+          legacyKeyUntouched: true
+          payloadIsUndefined: true
+          rawKeyLeftInPlace: true

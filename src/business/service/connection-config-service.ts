@@ -14,6 +14,10 @@ export const connectionConfigService = {
     return JSON.parse(rawConfig) as ConnectionConfig
   },
 
+  removeConfig: async (): Promise<void> => {
+    await AsyncStorage.removeItem(constant.connectionConfig.storageKey)
+  },
+
   saveConfig: async (params: { config: ConnectionConfig }): Promise<void> => {
     const { config } = params
     await AsyncStorage.setItem(constant.connectionConfig.storageKey, JSON.stringify(config))

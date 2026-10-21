@@ -13,6 +13,7 @@ All defined in `package.json`:
 ```bash
 pnpm start         # start the Expo dev server (needs a dev build on the device)
 pnpm android       # start for Android
+pnpm android-install  # reinstall the last built debug APK
 pnpm ios           # start for iOS
 pnpm typecheck     # tsc --noEmit
 pnpm lint          # prettier + eslint + jsonsort checks
@@ -33,7 +34,7 @@ keep the plain name.
 Android is the reference platform; iOS is best effort:
 
 ```bash
-pnpm android-rebuild   # clean prebuild + release-variant install
+pnpm android-rebuild   # clean prebuild + patch, regenerating android/ (no build or install)
 pnpm ios-rebuild       # best effort
 ```
 

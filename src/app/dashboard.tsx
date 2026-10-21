@@ -12,11 +12,11 @@ import { stateSyncServiceSingleton } from '@/business/service/state-sync-service
 import { useAppStateStore } from '@/business/store/app-state-store'
 import { constant } from '@/util/constant'
 import { sessionFinishedPulseUtil } from '@/util/session-finished-pulse-util'
-import { HeaderMenu } from '@/ui-component/dashboard/header-menu'
 import { SessionRow } from '@/ui-component/dashboard/session-row'
 import { SessionsSummaryLine } from '@/ui-component/dashboard/sessions-summary-line'
 import { UnreachableHostsNote } from '@/ui-component/dashboard/unreachable-hosts-note'
 import { UsageTrackerCard } from '@/ui-component/dashboard/usage-tracker-card'
+import { HeaderMenu } from '@/ui-component/header/header-menu'
 
 const resolveConnectionBanner = (params: {
   status: WsConnectionStatus

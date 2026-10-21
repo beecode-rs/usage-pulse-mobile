@@ -3,7 +3,7 @@ import { Modal, Pressable, StyleSheet, View } from 'react-native'
 
 import { useTheme } from '@/business/hook/use-theme'
 import { type ThemePalette } from '@/business/model/theme-model'
-import { HeaderMenuItem } from '@/ui-component/dashboard/header-menu-item'
+import { HeaderMenuItem } from '@/ui-component/header/header-menu-item'
 import { MoreIcon } from '@/ui-component/icon/more-icon'
 import { PauseIcon } from '@/ui-component/icon/pause-icon'
 import { PlayIcon } from '@/ui-component/icon/play-icon'

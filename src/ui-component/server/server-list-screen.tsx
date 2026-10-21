@@ -7,16 +7,23 @@ import { type ServerEntry } from '@/business/model/server-model'
 import { type ThemePalette } from '@/business/model/theme-model'
 import { useServerStore } from '@/business/store/server-store'
 import { constant } from '@/util/constant'
+import { HeaderMenu } from '@/ui-component/header/header-menu'
 import { ServerIcon } from '@/ui-component/icon/server-icon'
 import { ServerRowMenu } from '@/ui-component/server/server-row-menu'
 
 type ServerListScreenProps = {
+  isDisconnected: boolean
+  onAboutPress: () => void
   onAddPress: () => void
   onBackPress?: (() => void) | undefined
   onCloneServer: (params: { serverId: string }) => void
+  onConnectPress: () => void
   onDeleteServer: (params: { serverId: string }) => void
+  onDisconnectPress: () => void
   onEditServer: (params: { serverId: string }) => void
+  onRetryConnectPress: () => void
   onSelectServer: (params: { server: ServerEntry }) => void
+  onSettingsPress: () => void
 }
 
 const resolveServerLabel = (params: { host: string; name: string }): string => {
@@ -36,7 +43,20 @@ const resolveServerLocation = (params: { host: string; port: number }): string =
 }
 
 export const ServerListScreen = (props: ServerListScreenProps): ReactElement => {
-  const { onAddPress, onBackPress, onCloneServer, onDeleteServer, onEditServer, onSelectServer } = props
+  const {
+    isDisconnected,
+    onAboutPress,
+    onAddPress,
+    onBackPress,
+    onCloneServer,
+    onConnectPress,
+    onDeleteServer,
+    onDisconnectPress,
+    onEditServer,
+    onRetryConnectPress,
+    onSelectServer,
+    onSettingsPress,
+  } = props
   const { activeServerId, servers } = useServerStore()
   const theme = useTheme()
   const insets = useSafeAreaInsets()
@@ -73,13 +93,23 @@ export const ServerListScreen = (props: ServerListScreenProps): ReactElement => 
   }
 
   const renderHeaderLeading = (): ReactElement => {
-    if (onBackPress === undefined) {
-      return <View style={styles.headerSpacer} />
-    }
     return (
-      <Pressable hitSlop={8} onPress={onBackPress} style={styles.sideButtonWrapper}>
-        <Text style={styles.backText}>Back</Text>
-      </Pressable>
+      <View style={styles.headerLeading}>
+        {onBackPress !== undefined && (
+          <Pressable hitSlop={8} onPress={onBackPress} style={styles.sideButtonWrapper}>
+            <Text style={styles.backText}>Back</Text>
+          </Pressable>
+        )}
+        <Pressable
+          accessibilityLabel="Add server"
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={onAddPress}
+          style={styles.sideButtonWrapper}
+        >
+          <Text style={styles.addButtonText}>+</Text>
+        </Pressable>
+      </View>
     )
   }
 
@@ -144,15 +174,15 @@ export const ServerListScreen = (props: ServerListScreenProps): ReactElement => 
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         {renderHeaderLeading()}
         <Text style={styles.headerTitle}>Servers</Text>
-        <Pressable
-          accessibilityLabel="Add server"
-          accessibilityRole="button"
-          hitSlop={8}
-          onPress={onAddPress}
-          style={styles.sideButtonWrapper}
-        >
-          <Text style={styles.addButtonText}>+</Text>
-        </Pressable>
+        <HeaderMenu
+          dropdownTopOffset={insets.top + 52}
+          isDisconnected={isDisconnected}
+          onAboutPress={onAboutPress}
+          onConnectPress={onConnectPress}
+          onDisconnectPress={onDisconnectPress}
+          onRetryConnectPress={onRetryConnectPress}
+          onSettingsPress={onSettingsPress}
+        />
       </View>
       <ScrollView contentContainerStyle={styles.content}>{renderListBody()}</ScrollView>
     </View>
@@ -205,8 +235,10 @@ const createStyles = (params: { theme: ThemePalette }) => {
       paddingBottom: 10,
       paddingHorizontal: 16,
     },
-    headerSpacer: {
-      width: 38,
+    headerLeading: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: 8,
     },
     headerTitle: {
       color: theme.text,

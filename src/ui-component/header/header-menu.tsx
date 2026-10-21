@@ -3,7 +3,7 @@ import { Modal, Pressable, StyleSheet, View } from 'react-native'
 
 import { useTheme } from '@/business/hook/use-theme'
 import { type ThemePalette } from '@/business/model/theme-model'
-import { HeaderMenuItem } from '@/ui-component/dashboard/header-menu-item'
+import { HeaderMenuItem } from '@/ui-component/header/header-menu-item'
 import { GearIcon } from '@/ui-component/icon/gear-icon'
 import { InfoIcon } from '@/ui-component/icon/info-icon'
 import { MoreIcon } from '@/ui-component/icon/more-icon'
@@ -19,7 +19,7 @@ type HeaderMenuProps = {
   onConnectPress: () => void
   onDisconnectPress: () => void
   onRetryConnectPress: () => void
-  onServersPress: () => void
+  onServersPress?: (() => void) | undefined
   onSettingsPress: () => void
 }
 
@@ -115,13 +115,15 @@ export const HeaderMenu = (props: HeaderMenuProps): ReactElement => {
                 }}
               />
             )}
-            <HeaderMenuItem
-              icon={<ServerIcon color={theme.muted} />}
-              label="Servers"
-              onPress={() => {
-                return handleMenuSelect({ onPress: onServersPress })
-              }}
-            />
+            {onServersPress !== undefined && (
+              <HeaderMenuItem
+                icon={<ServerIcon color={theme.muted} />}
+                label="Servers"
+                onPress={() => {
+                  return handleMenuSelect({ onPress: onServersPress })
+                }}
+              />
+            )}
             <HeaderMenuItem
               icon={<GearIcon color={theme.muted} />}
               label="Settings"

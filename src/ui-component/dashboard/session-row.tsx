@@ -8,6 +8,7 @@ import { type ThemePalette } from '@/business/model/theme-model'
 import { sessionPresentationUtil } from '@/util/session-presentation-util'
 import { SessionFinishedPulse } from '@/ui-component/dashboard/session-finished-pulse'
 import { SessionOriginIcon } from '@/ui-component/dashboard/session-origin-icon'
+import { SessionProviderBadge } from '@/ui-component/dashboard/session-provider-badge'
 import { SessionWaitingPulse } from '@/ui-component/dashboard/session-waiting-pulse'
 
 const TICK_INTERVAL_MS = 30_000
@@ -81,7 +82,11 @@ export const SessionRow = (props: { finishedAtMs?: number; pulseMs: number; sess
     if (metaParts.length === 0) {
       return null
     }
-    return <Text style={styles.meta}>{metaParts.join(' · ')}</Text>
+    return (
+      <Text numberOfLines={1} style={styles.meta}>
+        {metaParts.join(' · ')}
+      </Text>
+    )
   }
 
   return (
@@ -103,14 +108,17 @@ export const SessionRow = (props: { finishedAtMs?: number; pulseMs: number; sess
             </View>
           )}
         </View>
+      </View>
+      <View style={styles.metaRow}>
+        <SessionProviderBadge provider={session.provider} />
         <View style={styles.chip}>
           <View style={[styles.chipDot, { backgroundColor: resolveStatusColor({ status: session.status, theme }) }]} />
           <Text style={[styles.chipText, { color: resolveStatusColor({ status: session.status, theme }) }]}>
             {resolveStatusText(session.status)}
           </Text>
         </View>
+        {renderMeta()}
       </View>
-      {renderMeta()}
     </View>
   )
 }
@@ -147,7 +155,14 @@ const createStyles = (params: { theme: ThemePalette }) => {
     },
     meta: {
       color: theme.muted,
+      flexShrink: 1,
       fontSize: 12,
+    },
+    metaRow: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      flexShrink: 1,
+      gap: 6,
     },
     row: {
       backgroundColor: theme.card,

@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { ProviderIdMapper } from '@/business/enum/provider-id-mapper-enum'
+import { SessionProviderMapper } from '@/business/enum/session-provider-mapper-enum'
 import { SessionStatusMapper } from '@/business/enum/session-status-mapper-enum'
 import { UsageActivityStatus } from '@/business/enum/usage-activity-status-enum'
 import { type MobileWsMessage, UsageWarningReason } from '@/business/model/mobile-api-model'
@@ -50,7 +51,11 @@ const sessionInfoSchema = z.object({
   hostLabel: z.string().optional(),
   kind: z.string(),
   name: z.string(),
-  pid: z.number(),
+  pid: z.number().optional(),
+  provider: z
+    .enum(SessionProviderMapper)
+    .default(SessionProviderMapper.CLAUDE_CODE)
+    .catch(SessionProviderMapper.CLAUDE_CODE),
   sessionId: z.string(),
   startedAt: z.number(),
   status: z.enum(SessionStatusMapper),

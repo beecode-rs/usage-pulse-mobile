@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 
 import { ApiClientErrorMapper } from '@/business/enum/api-client-error-mapper-enum'
 import { ProviderIdMapper } from '@/business/enum/provider-id-mapper-enum'
+import { SessionProviderMapper } from '@/business/enum/session-provider-mapper-enum'
 import { SessionStatusMapper } from '@/business/enum/session-status-mapper-enum'
 import { UsageActivityStatus } from '@/business/enum/usage-activity-status-enum'
 import { WsConnectionStatus } from '@/business/enum/ws-connection-status-enum'
@@ -81,6 +82,7 @@ const sessionFinishedMessage: MobileSessionFinishedMessage = {
     kind: 'claude-code',
     name: 'builder',
     pid: 7,
+    provider: SessionProviderMapper.CLAUDE_CODE,
     sessionId: 'session-7',
     startedAt: 111,
     status: SessionStatusMapper.IDLE,
@@ -94,6 +96,7 @@ const sessionWaitingMessage: MobileSessionWaitingMessage = {
     kind: 'claude-code',
     name: 'builder',
     pid: 7,
+    provider: SessionProviderMapper.CLAUDE_CODE,
     sessionId: 'session-7',
     startedAt: 111,
     status: SessionStatusMapper.WAITING,

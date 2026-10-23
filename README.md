@@ -18,7 +18,7 @@
   <a href="https://beecode.rs"><strong>Beecode</strong></a>
 </p>
 
-Usage Pulse Mobile is a small Expo (React Native) companion app for [Usage Pulse](https://github.com/beecode-rs/usage-pulse), the Electron desktop app that tracks Claude and z.ai usage limits and running Claude Code sessions. The phone connects to the desktop over your VPN and mirrors its dashboard on the go. It does 3 things:
+Usage Pulse Mobile is a small Expo (React Native) companion app for [Usage Pulse](https://github.com/beecode-rs/usage-pulse), the Electron desktop app that tracks Claude and z.ai usage limits and running Claude Code and OpenCode sessions. The phone connects to the desktop over your VPN and mirrors its dashboard on the go. It does 3 things:
 
 - **Dashboard** — shows the same live data as the desktop app: one usage card per tracker plus live session rows.
 - **Notifications** — fires local alerts when a session finishes, a session starts waiting for your input, or a usage warning occurs.

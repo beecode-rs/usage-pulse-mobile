@@ -1,3 +1,4 @@
+import { SessionProviderMapper } from '@/business/enum/session-provider-mapper-enum'
 import { SessionStatusMapper } from '@/business/enum/session-status-mapper-enum'
 import { type SessionInfo } from '@/business/model/session-model'
 import { timeUntilUtil } from '@/util/time-until-util'
@@ -42,6 +43,21 @@ export const sessionPresentationUtil = {
       return cwd
     }
     return lastSegment
+  },
+
+  resolveProviderLabel: (params: { provider: SessionProviderMapper }): string => {
+    const { provider } = params
+    switch (provider) {
+      case SessionProviderMapper.CLAUDE_CODE: {
+        return 'Claude Code'
+      }
+      case SessionProviderMapper.OPENCODE: {
+        return 'OpenCode'
+      }
+      default: {
+        return provider
+      }
+    }
   },
 
   resolveSessionTitle: (params: { session: SessionInfo }): string => {

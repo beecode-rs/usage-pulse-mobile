@@ -10,7 +10,11 @@
 # the two percent reasons or errorMessage for provider-error). Anything else
 # fails: an unknown type never matches a discriminator literal, a missing
 # required section fails, a wrong primitive for `at` fails, and enum fields
-# (session status, warning reason) reject values outside the enums. The state
+# (session status, warning reason) reject values outside the enums. Sessions
+# carry a provider (claude-code or opencode, as of the desktop's multi-provider
+# sessions; an older desktop that omits it parses as claude-code, and an
+# unknown provider string degrades to claude-code instead of dropping the
+# message) and an optional pid, absent for opencode sessions. The state
 # response mirrors the state message payload; the health response is the fixed
 # { ok, appVersion } pair.
 subject: mobileApiSchemaContractHarness
@@ -53,6 +57,7 @@ methods:
                   kind: claude-code
                   name: fix-login
                   pid: 123
+                  provider: claude-code
                   sessionId: session-1
                   startedAt: 1699999000000
                   status: idle
@@ -68,6 +73,37 @@ methods:
                     - label: 5h
                       resetAt: 1700001000000
                       usedPercent: 42.5
+          success: true
+      # --- sessions-snapshot variant with an opencode session: provider
+      # opencode, no pid (the opencode daemon exposes no process id) ---
+      - params:
+          - message:
+              sessions:
+                fetchedAt: 1700000000000
+                sessions:
+                  - cwd: /home/user/other
+                    kind: ''
+                    name: opencode session
+                    provider: opencode
+                    sessionId: ses_op_1
+                    startedAt: 1699999000000
+                    status: busy
+                unreachableHosts: []
+              type: sessions-snapshot
+        result:
+          data:
+            sessions:
+              fetchedAt: 1700000000000
+              sessions:
+                - cwd: /home/user/other
+                  kind: ''
+                  name: opencode session
+                  provider: opencode
+                  sessionId: ses_op_1
+                  startedAt: 1699999000000
+                  status: busy
+              unreachableHosts: []
+            type: sessions-snapshot
           success: true
       # --- state variant, sessions null before the first sessions poll ---
       - params:
@@ -160,6 +196,7 @@ methods:
               kind: claude-code
               name: refactor
               pid: 456
+              provider: claude-code
               sessionId: session-2
               startedAt: 1699998000000
               status: idle

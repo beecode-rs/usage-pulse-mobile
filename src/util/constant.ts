@@ -5,6 +5,7 @@ import { ThemeModeMapper } from '@/business/enum/theme-mode-mapper-enum'
 export const constant = {
   about: {
     beecodeUrl: 'https://beecode.rs',
+    githubUrl: 'https://github.com/beecode-rs/usage-pulse-mobile',
     providerCatalog: [
       {
         description: 'Usage limits from your Claude coding plan',

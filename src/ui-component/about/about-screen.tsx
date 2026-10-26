@@ -1,6 +1,6 @@
 import Constants from 'expo-constants'
 import { type ReactElement } from 'react'
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { useTheme } from '@/business/hook/use-theme'
@@ -22,6 +22,10 @@ export const AboutScreen = (props: AboutScreenProps): ReactElement => {
   const insets = useSafeAreaInsets()
   const styles = createStyles({ theme })
   const appVersion = resolveAppVersion()
+
+  const handleGitHubPress = (): void => {
+    void Linking.openURL(constant.about.githubUrl)
+  }
 
   return (
     <View style={styles.screen}>
@@ -65,6 +69,17 @@ export const AboutScreen = (props: AboutScreenProps): ReactElement => {
             Access tokens stay in the desktop app. This mobile client talks only to your own desktop server over the
             local network, with no intermediary servers.
           </Text>
+        </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Source code</Text>
+          <Pressable
+            accessibilityLabel="Open GitHub repository"
+            accessibilityRole="link"
+            hitSlop={4}
+            onPress={handleGitHubPress}
+          >
+            <Text style={styles.linkText}>github.com/beecode-rs/usage-pulse-mobile</Text>
+          </Pressable>
         </View>
         <View style={styles.section}>
           <BeecodeCredit />
@@ -119,6 +134,11 @@ const createStyles = (params: { theme: ThemePalette }) => {
     headerTitle: {
       color: theme.text,
       fontSize: 16,
+      fontWeight: '600',
+    },
+    linkText: {
+      color: theme.accent,
+      fontSize: 14,
       fontWeight: '600',
     },
     provider: {
